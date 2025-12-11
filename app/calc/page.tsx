@@ -97,28 +97,39 @@ export default function CalcPage() {
                 ignoreElements: (element: Element) => element.classList.contains("screenshot-ignore"),
             } as any);
 
-            canvas.toBlob(async (blob) => {
-                if (!blob) return;
+            const blob = await new Promise<Blob | null>((resolve) =>
+                canvas.toBlob((b) => resolve(b), "image/png")
+            );
 
+            if (!blob) return;
+
+            let copied = false;
+
+            // Try Clipboard API
+            if ("clipboard" in navigator && typeof (window as any).ClipboardItem !== "undefined") {
                 try {
-                    // Attempt to write to clipboard
-                    await navigator.clipboard.write([
-                        new ClipboardItem({ "image/png": blob }),
-                    ]);
-                    alert("結果をクリップボードにコピーしました！");
-                } catch (err) {
-                    console.warn("Clipboard copy failed, falling back to download.", err);
-                    // Fallback to download
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "sekisan-result.png";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    const item = new (window as any).ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+                    copied = true;
+                    alert("参考積算結果の画像をクリップボードにコピーしました。Excel で Ctrl+V してください。");
+                } catch (error) {
+                    console.error("Clipboard copy failed", error);
                 }
-            });
+            }
+
+            // Fallback: Download
+            if (!copied) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "sekisan-result.png";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert("画像の自動コピーに失敗したため、画像をダウンロードしました。Excel にはこの画像ファイルを貼り付けてお使いください。");
+            }
+
         } catch (err) {
             console.error("Screenshot capture failed:", err);
             alert("画像の保存に失敗しました。");
