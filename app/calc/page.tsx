@@ -41,8 +41,6 @@ export default function CalcPage() {
     }, [structure]);
 
     const handleCalculate = () => {
-        // Convert empty strings to 0 or handle validation if needed.
-        // For this requirements, we will treat empty as 0.
         const rPrice = roadPrice === "" ? 0 : roadPrice;
         const lArea = landArea === "" ? 0 : landArea;
         const bAge = age === "" ? 0 : age;
@@ -60,7 +58,6 @@ export default function CalcPage() {
             calcBuildingPrice = 0;
         }
 
-        // Floor calculation results to integers for cleaner display
         const finalLandPrice = Math.floor(calcLandPrice);
         const finalBuildingPrice = Math.floor(calcBuildingPrice);
 
@@ -72,21 +69,27 @@ export default function CalcPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-100 p-4 md:p-8">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-gray-800">
-                    不動産積算シミュレーション
-                </h1>
+        <main className="min-h-screen bg-slate-50 p-4 md:p-8 text-slate-700">
+            <div className="max-w-[960px] mx-auto space-y-8">
+                <div className="text-center">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+                        不動産積算シミュレーション
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-2">
+                        土地と建物の情報を入力して、概算評価額を計算します
+                    </p>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Land Information Section */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-xl font-semibold mb-4 text-blue-600 border-b pb-2">
+                    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100 h-full flex flex-col">
+                        <h2 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center">
+                            <span className="bg-blue-600 w-2 h-6 mr-3 rounded-sm"></span>
                             土地情報
                         </h2>
-                        <div className="space-y-4">
+                        <div className="space-y-6 flex-grow">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-600 mb-2">
                                     路線価または公示地価 (円/㎡)
                                 </label>
                                 <input
@@ -95,12 +98,12 @@ export default function CalcPage() {
                                     onChange={(e) =>
                                         setRoadPrice(e.target.value === "" ? "" : Number(e.target.value))
                                     }
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="例: 100000"
+                                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                                    placeholder="100000"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-600 mb-2">
                                     土地面積 (㎡)
                                 </label>
                                 <input
@@ -109,49 +112,55 @@ export default function CalcPage() {
                                     onChange={(e) =>
                                         setLandArea(e.target.value === "" ? "" : Number(e.target.value))
                                     }
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="例: 100"
+                                    className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                                    placeholder="100"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Building Information Section */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-xl font-semibold mb-4 text-blue-600 border-b pb-2">
+                    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100 h-full flex flex-col">
+                        <h2 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center">
+                            <span className="bg-blue-600 w-2 h-6 mr-3 rounded-sm"></span>
                             建物情報
                         </h2>
-                        <div className="space-y-4">
+                        <div className="space-y-6 flex-grow">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-600 mb-2">
                                     構造
                                 </label>
-                                <select
-                                    value={structure}
-                                    onChange={(e) => setStructure(e.target.value as StructureType)}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {Object.keys(STRUCTURES).map((s) => (
-                                        <option key={s} value={s}>
-                                            {s}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={structure}
+                                        onChange={(e) => setStructure(e.target.value as StructureType)}
+                                        className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none"
+                                    >
+                                        {Object.keys(STRUCTURES).map((s) => (
+                                            <option key={s} value={s}>
+                                                {s}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                                    </div>
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">
                                         法定耐用年数
                                     </label>
                                     <input
                                         type="number"
                                         value={usefulLife}
                                         readOnly
-                                        className="w-full p-2 border border-gray-300 bg-gray-100 rounded-md text-gray-500"
+                                        className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">
                                         築年数
                                     </label>
                                     <input
@@ -160,25 +169,25 @@ export default function CalcPage() {
                                         onChange={(e) =>
                                             setAge(e.target.value === "" ? "" : Number(e.target.value))
                                         }
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="例: 10"
+                                        className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                                        placeholder="10"
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">
                                         再調達価格単価
                                     </label>
                                     <input
                                         type="number"
                                         value={unitPrice}
                                         readOnly
-                                        className="w-full p-2 border border-gray-300 bg-gray-100 rounded-md text-gray-500"
+                                        className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">
                                         延床面積 (㎡)
                                     </label>
                                     <input
@@ -187,8 +196,8 @@ export default function CalcPage() {
                                         onChange={(e) =>
                                             setFloorArea(e.target.value === "" ? "" : Number(e.target.value))
                                         }
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="例: 80"
+                                        className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                                        placeholder="80"
                                     />
                                 </div>
                             </div>
@@ -196,38 +205,59 @@ export default function CalcPage() {
                     </div>
                 </div>
 
-                <div className="text-center mb-10">
+                <div className="py-2">
                     <button
                         onClick={handleCalculate}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105"
+                        className="w-full md:w-auto md:min-w-[300px] block mx-auto py-4 px-8 bg-blue-600 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
                     >
-                        計算する
+                        価格を計算する
                     </button>
                 </div>
 
                 {results && (
-                    <div className="bg-white p-8 rounded-xl shadow-xl border-2 border-blue-100">
-                        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-                            計算結果
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500 mb-1">土地価格</p>
-                                <p className="text-xl font-semibold text-gray-800">
-                                    {results.landPrice.toLocaleString()} <span className="text-sm">円</span>
-                                </p>
+                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                            <h2 className="text-xl font-bold text-slate-800 text-center">計算結果</h2>
+                        </div>
+
+                        <div className="p-6 md:p-8 space-y-8">
+                            {/* Land Result */}
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                                <div className="flex-1 w-full text-center md:text-left">
+                                    <p className="text-sm text-slate-400 mb-1">
+                                        土地価格 ＝ 路線価（円/㎡） × 土地面積（㎡）
+                                    </p>
+                                    <p className="text-slate-600 text-sm font-medium">土地価格</p>
+                                </div>
+                                <div className="text-2xl font-bold text-slate-800">
+                                    ¥ {results.landPrice.toLocaleString()}
+                                </div>
                             </div>
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <p className="text-sm text-gray-500 mb-1">建物価格</p>
-                                <p className="text-xl font-semibold text-gray-800">
-                                    {results.buildingPrice.toLocaleString()} <span className="text-sm">円</span>
-                                </p>
+
+                            {/* Building Result */}
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                                <div className="flex-1 w-full text-center md:text-left">
+                                    <p className="text-sm text-slate-400 mb-1">
+                                        建物価格 ＝ 再調達単価 × 延床面積 × ｛（法定耐用年数 − 築年数） ÷ 法定耐用年数｝
+                                    </p>
+                                    <p className="text-slate-600 text-sm font-medium">建物価格</p>
+                                </div>
+                                <div className="text-2xl font-bold text-slate-800">
+                                    ¥ {results.buildingPrice.toLocaleString()}
+                                </div>
                             </div>
-                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 col-span-1 md:col-span-1">
-                                <p className="text-sm text-blue-600 mb-1 font-bold">積算価格合計</p>
-                                <p className="text-2xl font-bold text-blue-700">
-                                    {results.total.toLocaleString()} <span className="text-base">円</span>
+
+                            {/* Total Result */}
+                            <div className="pt-2 text-center md:text-right">
+                                <p className="text-sm text-slate-400 mb-2">
+                                    合計価格 ＝ 土地価格 ＋ 建物価格
                                 </p>
+                                <div className="inline-flex flex-col md:flex-row items-end md:items-baseline gap-2">
+                                    <span className="text-lg font-bold text-blue-600">積算価格合計</span>
+                                    <span className="text-4xl md:text-5xl font-extrabold text-blue-700 tracking-tight">
+                                        ¥ {results.total.toLocaleString()}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
