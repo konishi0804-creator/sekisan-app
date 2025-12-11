@@ -31,6 +31,14 @@ export default function CalcPage() {
         landPrice: number;
         buildingPrice: number;
         total: number;
+        snapshot: {
+            roadPrice: number;
+            landArea: number;
+            unitPrice: number;
+            usefulLife: number;
+            age: number;
+            floorArea: number;
+        };
     } | null>(null);
 
     // Auto-fill logic based on structure change
@@ -65,7 +73,19 @@ export default function CalcPage() {
             landPrice: finalLandPrice,
             buildingPrice: finalBuildingPrice,
             total: finalLandPrice + finalBuildingPrice,
+            snapshot: {
+                roadPrice: rPrice,
+                landArea: lArea,
+                unitPrice: unitPrice,
+                usefulLife: usefulLife,
+                age: bAge,
+                floorArea: fArea,
+            },
         });
+    };
+
+    const formatCurrency = (val: number) => {
+        return val.toLocaleString("ja-JP", { style: "currency", currency: "JPY" });
     };
 
     return (
@@ -217,45 +237,51 @@ export default function CalcPage() {
                 {results && (
                     <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-800 text-center">計算結果</h2>
+                            <h2 className="text-xl font-bold text-slate-800 text-center">参考積算価格</h2>
                         </div>
 
                         <div className="p-6 md:p-8 space-y-8">
                             {/* Land Result */}
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                                <div className="flex-1 w-full text-center md:text-left">
-                                    <p className="text-sm text-slate-400 mb-1">
-                                        土地価格 ＝ 路線価（円/㎡） × 土地面積（㎡）
+                            <div className="flex flex-col md:flex-row items-start justify-between gap-4 pb-6 border-b border-slate-100">
+                                <div className="flex-1 w-full text-center md:text-left space-y-2">
+                                    <p className="text-slate-600 text-lg font-bold">土地価格</p>
+                                    <p className="text-sm text-slate-500">
+                                        土地価格 ＝ 路線価（{formatCurrency(results.snapshot.roadPrice)}）
+                                        × 土地面積（{results.snapshot.landArea.toLocaleString()}㎡）
+                                        ＝ {formatCurrency(results.landPrice)}
                                     </p>
-                                    <p className="text-slate-600 text-sm font-medium">土地価格</p>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800">
-                                    ¥ {results.landPrice.toLocaleString()}
+                                <div className="text-2xl font-bold text-slate-800 whitespace-nowrap">
+                                    {formatCurrency(results.landPrice)}
                                 </div>
                             </div>
 
                             {/* Building Result */}
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                                <div className="flex-1 w-full text-center md:text-left">
-                                    <p className="text-sm text-slate-400 mb-1">
-                                        建物価格 ＝ 再調達単価 × 延床面積 × ｛（法定耐用年数 − 築年数） ÷ 法定耐用年数｝
+                            <div className="flex flex-col md:flex-row items-start justify-between gap-4 pb-6 border-b border-slate-100">
+                                <div className="flex-1 w-full text-center md:text-left space-y-2">
+                                    <p className="text-slate-600 text-lg font-bold">建物価格</p>
+                                    <p className="text-sm text-slate-500 leading-relaxed">
+                                        建物価格 ＝ 再調達単価（{formatCurrency(results.snapshot.unitPrice)}）
+                                        × 延床面積（{results.snapshot.floorArea.toLocaleString()}㎡）
+                                        × {'{'} (法定耐用年数 {results.snapshot.usefulLife}年 − 築年数 {results.snapshot.age}年)
+                                        ÷ 法定耐用年数 {results.snapshot.usefulLife}年 {'}'}
+                                        ＝ {formatCurrency(results.buildingPrice)}
                                     </p>
-                                    <p className="text-slate-600 text-sm font-medium">建物価格</p>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800">
-                                    ¥ {results.buildingPrice.toLocaleString()}
+                                <div className="text-2xl font-bold text-slate-800 whitespace-nowrap">
+                                    {formatCurrency(results.buildingPrice)}
                                 </div>
                             </div>
 
                             {/* Total Result */}
                             <div className="pt-2 text-center md:text-right">
                                 <p className="text-sm text-slate-400 mb-2">
-                                    合計価格 ＝ 土地価格 ＋ 建物価格
+                                    参考積算価格 ＝ 土地価格 ＋ 建物価格 ＝ {formatCurrency(results.total)}
                                 </p>
                                 <div className="inline-flex flex-col md:flex-row items-end md:items-baseline gap-2">
-                                    <span className="text-lg font-bold text-blue-600">積算価格合計</span>
+                                    <span className="text-lg font-bold text-blue-600">参考積算価格</span>
                                     <span className="text-4xl md:text-5xl font-extrabold text-blue-700 tracking-tight">
-                                        ¥ {results.total.toLocaleString()}
+                                        {formatCurrency(results.total)}
                                     </span>
                                 </div>
                             </div>
