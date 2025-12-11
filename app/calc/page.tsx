@@ -1,6 +1,8 @@
+```javascript
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
 
 type StructureType = "木造" | "軽量鉄骨造" | "重量鉄骨造" | "RC造・SRC造";
 
@@ -40,6 +42,8 @@ export default function CalcPage() {
             floorArea: number;
         };
     } | null>(null);
+
+    const resultRef = useRef<HTMLDivElement>(null);
 
     // Auto-fill logic based on structure change
     useEffect(() => {
@@ -82,6 +86,44 @@ export default function CalcPage() {
                 floorArea: fArea,
             },
         });
+    };
+
+    const handleCapture = async () => {
+        if (!resultRef.current) return;
+
+        try {
+            const canvas = await html2canvas(resultRef.current, {
+                scale: 2, // Improve quality
+                backgroundColor: "#ffffff",
+                ignoreElements: (element) => element.classList.contains("screenshot-ignore"),
+            });
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+
+                try {
+                    // Attempt to write to clipboard
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ "image/png": blob }),
+                    ]);
+                    alert("結果をクリップボードにコピーしました！");
+                } catch (err) {
+                    console.warn("Clipboard copy failed, falling back to download.", err);
+                    // Fallback to download
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "sekisan-result.png";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            });
+        } catch (err) {
+            console.error("Screenshot capture failed:", err);
+            alert("画像の保存に失敗しました。");
+        }
     };
 
     const formatCurrency = (val: number) => {
@@ -235,9 +277,42 @@ export default function CalcPage() {
                 </div>
 
                 {results && (
-                    <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div
+                        ref={resultRef}
+                        className="relative bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    >
+                        {/* Screenshot Button */}
+                        <button
+                            onClick={handleCapture}
+                            className="screenshot-ignore absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 p-2 rounded-full shadow-sm text-gray-600 transition-colors z-10"
+                            title="参考積算結果を画像コピー"
+                            aria-label="参考積算結果を画像コピー"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                                />
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                                />
+                            </svg>
+                        </button>
+
                         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-800 text-center">参考積算価格</h2>
+                            <h2 className="text-xl font-bold text-slate-800 text-center">
+                                参考積算価格
+                            </h2>
                         </div>
 
                         <div className="p-6 md:p-8 space-y-8">
@@ -292,3 +367,4 @@ export default function CalcPage() {
         </main>
     );
 }
+```
