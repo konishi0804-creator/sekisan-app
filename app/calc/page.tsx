@@ -94,8 +94,8 @@ export default function CalcPage() {
             const canvas = await html2canvas(resultRef.current, {
                 scale: 2, // Improve quality
                 backgroundColor: "#ffffff",
-                ignoreElements: (element) => element.classList.contains("screenshot-ignore"),
-            });
+                ignoreElements: (element: Element) => element.classList.contains("screenshot-ignore"),
+            } as any);
 
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
