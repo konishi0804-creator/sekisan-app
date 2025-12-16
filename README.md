@@ -34,6 +34,31 @@ To use the document analysis features, you must configure Google Cloud Vertex AI
    ```
 
 
+## Windows / VS Codeでの起動手順
+
+1. **VS Codeでプロジェクトを開く**
+   - フォルダ `sekisan-app` を開いてください。
+
+2. **ターミナルを開く**
+   - メニューの `Terminal` > `New Terminal` をクリック。
+
+3. **依存関係のインストール**（初回のみ）
+   ```powershell
+   npm install
+   ```
+
+4. **開発サーバーの起動**
+   ```powershell
+   npm run dev
+   ```
+
+5. **ブラウザで確認**
+   - [http://localhost:3000](http://localhost:3000) を開く。
+
+> [!IMPORTANT]
+> `.env.local` を変更した場合は、必ずターミナルで `Ctrl+C` を押してサーバーを停止し、再度 `npm run dev` で起動し直してください。
+
+
 ## Getting Started
 
 First, run the development server:

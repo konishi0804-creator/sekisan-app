@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { VertexAI } from "@google-cloud/vertexai";
@@ -5,6 +6,14 @@ import { VertexAI } from "@google-cloud/vertexai";
 // --- Configuration ---
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT;
 const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
+console.log("ENV CHECK", {
+    PROJECT_ID,
+    LOCATION,
+    rawProject: process.env.GOOGLE_CLOUD_PROJECT,
+    rawLocation: process.env.GOOGLE_CLOUD_LOCATION,
+    cwd: process.cwd(),
+});
+
 const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-1.5-flash-001"; // Fallback to compatible vertex model
 
 export async function POST(req: NextRequest) {

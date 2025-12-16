@@ -446,6 +446,19 @@ export default function CalcPage() {
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
                         土地と建物の情報を入力して、概算評価額を計算します
                     </p>
+                    {error && (
+                        <div className="mt-4 mx-auto max-w-2xl bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 text-left">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-600 shrink-0 mt-0.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
+                            </svg>
+                            <div>
+                                <h3 className="text-red-800 font-bold text-sm mb-1">エラーが発生しました</h3>
+                                <p className="text-red-700 text-sm whitespace-pre-wrap leading-relaxed">
+                                    {error}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
