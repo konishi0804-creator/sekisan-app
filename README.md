@@ -1,5 +1,39 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup (Vertex AI)
+
+To use the document analysis features, you must configure Google Cloud Vertex AI access.
+
+1. **Create `.env.local`** (This file is ignored by git)
+   Run one of the following commands in your terminal:
+
+   **Windows (PowerShell):**
+   ```powershell
+   copy .env.local.example .env.local
+   ```
+   **Mac/Linux:**
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+2. **Configure Variables**
+   Open `.env.local` and set your Google Cloud Project ID and Region.
+   *You can find your Project ID in the [Google Cloud Console](https://console.cloud.google.com/).*
+
+   ```env
+   # .env.local
+   GOOGLE_CLOUD_PROJECT=your-project-id-here
+   GOOGLE_CLOUD_LOCATION=us-central1
+   NODE_ENV=development
+   ```
+
+3. **Authentication (Local Development)**
+   Ensue you are authenticated with Google Cloud SDK:
+   ```powershell
+   gcloud auth application-default login
+   ```
+
+
 ## Getting Started
 
 First, run the development server:
