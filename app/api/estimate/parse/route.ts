@@ -1,27 +1,18 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { VertexAI } from "@google-cloud/vertexai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // --- Configuration ---
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT;
-const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
-console.log("ENV CHECK", {
-    PROJECT_ID,
-    LOCATION,
-    rawProject: process.env.GOOGLE_CLOUD_PROJECT,
-    rawLocation: process.env.GOOGLE_CLOUD_LOCATION,
-    cwd: process.cwd(),
-});
-
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-1.5-flash-001"; // Fallback to compatible vertex model
+const API_KEY = process.env.GEMINI_API_KEY;
+const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.0-flash"; // Default to a stable model
 
 export async function POST(req: NextRequest) {
     // 1. Validate Config
-    if (!PROJECT_ID) {
+    if (!API_KEY) {
         return NextResponse.json(
-            { error: "GOOGLE_CLOUD_PROJECT が未設定です。.env.local を作成してください" },
-            { status: 400 }
+            { error: "GEMINI_API_KEY が未設定です。.env.local を確認してください" },
+            { status: 500 }
         );
     }
 
@@ -34,9 +25,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
         }
 
-        // 3. Initialize Vertex AI
-        const vertexAI = new VertexAI({ project: PROJECT_ID, location: LOCATION });
-        const model = vertexAI.getGenerativeModel({
+        // 3. Initialize Gemini AI
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        const model = genAI.getGenerativeModel({
             model: MODEL_NAME,
             generationConfig: {
                 responseMimeType: "application/json",
@@ -96,6 +87,13 @@ export async function POST(req: NextRequest) {
                   "grandTotal": "number|null" 
                 }
               },
+              "coordinates": {
+                 "landArea": [number, number, number, number] | null,
+                 "structure": [number, number, number, number] | null,
+                 "address": [number, number, number, number] | null,
+                 "roadPrice": [number, number, number, number] | null,
+                 "age": [number, number, number, number] | null
+              },
               "missingFields": [
                 { "field": "string", "reason": "string (Why is it missing?)", "suggestedWhereToFind": "string|null" }
               ],
@@ -106,6 +104,12 @@ export async function POST(req: NextRequest) {
             - "landArea" should be mapped to planInfo.area_m2 (Land Area).
             - "structure" should be normalized: "木造", "軽量鉄骨造", "重量鉄骨造", "RC造・SRC造".
             - "roadPrice" if explicit.
+
+            Coordinates Instructions:
+            - For "coordinates" field, provide the bounding box [ymin, xmin, ymax, xmax] of the text source in the image.
+            - Coordinates must be normalized to 1000 scale (0-1000).
+            - Example: [100, 200, 150, 400] means ymin=10% from top, xmin=20% from left, etc.
+            - If value not found or page is not image, set to null.
             `
         });
 

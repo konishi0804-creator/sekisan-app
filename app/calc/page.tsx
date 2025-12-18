@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import FileUploader from "../../components/FileUploader";
+import DocumentPreview from "../../components/DocumentPreview";
 
 
 type StructureType = "木造" | "軽量鉄骨造" | "重量鉄骨造" | "RC造・SRC造";
@@ -157,6 +157,21 @@ export default function CalcPage() {
     const [addressCandidates, setAddressCandidates] = useState<string[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<string>("");
 
+    // Preview State
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string>("");
+
+    type Coordinates = [number, number, number, number];
+    type ExtractedCoordinates = {
+        landArea?: Coordinates | null;
+        structure?: Coordinates | null;
+        address?: Coordinates | null;
+        roadPrice?: Coordinates | null;
+        age?: Coordinates | null;
+    } | null;
+
+    const [coordinates, setCoordinates] = useState<ExtractedCoordinates>(null);
+
 
 
     // User ID for rate limiting
@@ -180,6 +195,19 @@ export default function CalcPage() {
         setError(null);
         setAddressCandidates([]); // Reset candidates
         setSelectedAddress("");   // Reset selection
+        setCoordinates(null);
+
+        // Preview Setup
+        if (files.length > 0) {
+            const file = files[0];
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+            setFileType(file.type);
+
+            // Cleanup previous URL if needed (useEffect cleanup handles component unmount, but here we replace)
+            // Ideally we track the previous one to revoke, but React state update batching makes it simple enough to just let GC handle small leaks or rely on unmount cleanup if we added it. 
+            // For robustness, let's just rely on the new one being set.
+        }
 
         try {
             const formData = new FormData();
@@ -260,7 +288,6 @@ export default function CalcPage() {
             if (info.roadPrice) setRoadPrice(info.roadPrice);
             if (info.age) setAge(info.age);
 
-            // Handle Address Candidates
             if (info.siteAddress) {
                 setAddressCandidates([info.siteAddress]);
                 setSelectedAddress(info.siteAddress);
@@ -269,12 +296,18 @@ export default function CalcPage() {
                 setSelectedAddress("");
             }
 
+            // Set Coordinates
+            if (data.coordinates) {
+                setCoordinates(data.coordinates);
+            }
+
             // Clear invalid fields if they are now filled
             setInvalidFields([]);
 
-        } catch (e: any) {
+        } catch (e) {
             console.error(e);
-            setError(lang === "ja" ? e.message || "資料の読み取りに失敗しました。" : "Failed to analyze document.");
+            const msg = e instanceof Error ? e.message : "読み取りエラーが発生しました";
+            setError(lang === "ja" ? msg : "Failed to analyze document.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -437,19 +470,21 @@ export default function CalcPage() {
     };
 
     return (
-        <main className="min-h-screen p-4 md:p-8 text-slate-700 dark:text-slate-200">
-            <div className="max-w-[960px] mx-auto space-y-8">
-                <div className="text-center">
+        <main className="min-h-screen bg-slate-50/50 dark:bg-slate-900/50 p-4 md:p-6 lg:p-8 text-slate-700 dark:text-slate-200">
+            <div className="max-w-[1600px] mx-auto">
+
+                {/* Header Section */}
+                <div className="text-center mb-8">
                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
                         不動産積算シミュレーション
                     </h1>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-                        土地と建物の情報を入力して、概算評価額を計算します
+                        資料を見ながら情報を入力して、概算評価額を計算します
                     </p>
                     {error && (
                         <div className="mt-4 mx-auto max-w-2xl bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 text-left">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-600 shrink-0 mt-0.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9.004 9.004 0 11-18 0 9.004 9.004 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
                             </svg>
                             <div>
                                 <h3 className="text-red-800 font-bold text-sm mb-1">エラーが発生しました</h3>
@@ -461,458 +496,526 @@ export default function CalcPage() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    {/* Document Upload Section */}
-                    <div className="md:col-span-2">
-                        <FileUploader onFileSelect={handleFileUpload} isLoading={isAnalyzing} />
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    {/* Address Candidates Section (New) */}
-                    <div className="md:col-span-2 bg-white rounded-xl shadow-md p-6 border border-slate-100">
-                        <h2 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-4 flex items-center">
-                            <span className="bg-emerald-500 w-2 h-6 mr-3 rounded-sm"></span>
-                            所在地 (参考)
-                        </h2>
-                        <div className="space-y-4">
-                            {/* Candidate List */}
-                            {addressCandidates.length > 0 ? (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-slate-600 font-bold">資料から抽出された住所:</p>
-                                    <div className="space-y-1">
-                                        {addressCandidates.map((addr, idx) => (
-                                            <label key={idx} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-slate-50 border border-transparent hover:border-slate-200">
-                                                <input
-                                                    type="radio"
-                                                    name="address_candidate"
-                                                    checked={selectedAddress === addr}
-                                                    onChange={() => setSelectedAddress(addr)}
-                                                    className="text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm text-slate-800">{addr}</span>
-                                            </label>
-                                        ))}
+                    {/* LEFT COLUMN: INPUT FORMS (Span 5) */}
+                    <div className="lg:col-span-5 space-y-6 order-2 lg:order-2">
+
+                        {/* Address Candidates Section */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center">
+                                <span className="bg-emerald-500 w-1.5 h-5 mr-3 rounded-sm"></span>
+                                所在地 (参考)
+                            </h2>
+                            <div className="space-y-4">
+                                {/* Candidate List */}
+                                {addressCandidates.length > 0 ? (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-slate-500 font-bold">資料から抽出された住所:</p>
+                                        <div className="space-y-1">
+                                            {addressCandidates.map((addr, idx) => (
+                                                <label key={idx} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
+                                                    <input
+                                                        type="radio"
+                                                        name="address_candidate"
+                                                        checked={selectedAddress === addr}
+                                                        onChange={() => setSelectedAddress(addr)}
+                                                        className="text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-slate-800 break-all">{addr}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-orange-500 font-bold">
+                                        {isAnalyzing ? "解析中..." : "住所が特定できませんでした。手入力してください。"}
+                                    </p>
+                                )}
+
+                                {/* Manual Input / Selected Display */}
+                                <div>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={selectedAddress}
+                                            onChange={(e) => setSelectedAddress(e.target.value)}
+                                            placeholder="例：東京都千代田区千代田1-1"
+                                            className="w-full p-3 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                        />
+                                        <button
+                                            onClick={() => handleOpenMap("copy")}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+                                            title="住所をコピー"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-3">
+                                        <button
+                                            onClick={() => handleOpenMap("chikamap")}
+                                            className="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold text-sm rounded-lg shadow hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                            disabled={!selectedAddress}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 group-hover:animate-bounce">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.875 1.875 0 00-1.68 0l-3.252 1.626c-.317.159-.69.159-1.006 0L1.76 3.25C1.037 2.895.25 3.417.25 4.22v12.43c0 .426.24.815.622 1.006l4.875 2.437c.317.159.69.159 1.006 0l3.252-1.626a1.875 1.875 0 001.68 0l3.252 1.626z" />
+                                            </svg>
+                                            全国地価マップで確認
+                                        </button>
                                     </div>
                                 </div>
-                            ) : (
-                                <p className="text-sm text-orange-500 font-bold">
-                                    {isAnalyzing ? "解析中..." : "住所が特定できませんでした。手入力してください。"}
-                                </p>
-                            )}
+                            </div>
+                        </div>
 
-                            {/* Manual Input / Selected Display */}
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">
-                                    {addressCandidates.length > 0 ? "選択中の住所（修正可）" : "住所を手入力"}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={selectedAddress}
-                                    onChange={(e) => setSelectedAddress(e.target.value)}
-                                    placeholder="例：東京都千代田区千代田1-1"
-                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                />
-
-                                <div className="mt-2">
+                        {/* Land Information Section */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
+                                <h2 className="text-base font-bold text-slate-800 flex items-center">
+                                    <span className="bg-blue-600 w-1.5 h-5 mr-3 rounded-sm"></span>
+                                    土地情報
+                                </h2>
+                                <div className="flex bg-slate-100 p-0.5 rounded-lg scale-90 origin-right">
                                     <button
-                                        onClick={() => handleOpenMap("chikamap")}
-                                        className="w-full px-4 py-3 bg-emerald-600 text-white font-bold text-base rounded-lg shadow-md hover:bg-emerald-700 hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        disabled={!selectedAddress}
+                                        onClick={() => setLandValuationMethod("auto")}
+                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "auto" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.875 1.875 0 00-1.68 0l-3.252 1.626c-.317.159-.69.159-1.006 0L1.76 3.25C1.037 2.895.25 3.417.25 4.22v12.43c0 .426.24.815.622 1.006l4.875 2.437c.317.159.69.159 1.006 0l3.252-1.626a1.875 1.875 0 001.68 0l3.252 1.626z" />
-                                        </svg>
-                                        全国地価マップで確認
+                                        自動
                                     </button>
-                                    <p className="text-xs text-slate-400 text-center mt-1">※自動的に住所がクリップボードにコピーされます</p>
+                                    <button
+                                        onClick={() => setLandValuationMethod("road")}
+                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "road" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        路線価
+                                    </button>
+                                    <button
+                                        onClick={() => setLandValuationMethod("multiplier")}
+                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "multiplier" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                                    >
+                                        倍率
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Land Information Section */}
-                    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100 h-full flex flex-col relative overflow-hidden">
-                        <div className="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-6">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center">
-                                <span className="bg-blue-600 w-2 h-6 mr-3 rounded-sm"></span>
-                                土地情報
-                            </h2>
-                            <div className="flex bg-slate-100 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setLandValuationMethod("auto")}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "auto" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    自動
-                                </button>
-                                <button
-                                    onClick={() => setLandValuationMethod("road")}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "road" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    路線価
-                                </button>
-                                <button
-                                    onClick={() => setLandValuationMethod("multiplier")}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "multiplier" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
-                                >
-                                    倍率
-                                </button>
-                            </div>
-                        </div>
+                            <div className="space-y-6">
+                                {/* Auto Mode - Active Indicator */}
+                                {landValuationMethod === "auto" && (
+                                    <div className="text-xs font-bold text-slate-500 bg-slate-50 px-3 py-2 rounded border border-slate-200 flex items-center gap-2">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                                        {roadPrice !== "" ? "路線価方式を適用中" : "倍率方式を適用中"}
+                                    </div>
+                                )}
 
-                        <div className="space-y-6 flex-grow">
-                            {/* Auto Mode - Active Indicator */}
-                            {landValuationMethod === "auto" && (
-                                <div className="text-xs font-bold text-slate-500 bg-slate-50 px-3 py-2 rounded border border-slate-200 flex items-center gap-2 mb-2">
-                                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                                    {roadPrice !== "" ? "現在の適用：路線価方式（路線価が入力されています）" : "現在の適用：倍率方式（路線価が未入力のため）"}
-                                </div>
-                            )}
-
-                            {/* Road Price Inputs */}
-                            {(landValuationMethod === "road" || landValuationMethod === "auto") && (
-                                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <label className="block text-sm font-semibold text-slate-600">
-                                                路線価
-                                            </label>
-                                            <div className="flex items-center bg-slate-100 rounded-md p-0.5">
-                                                <button
-                                                    onClick={() => setRoadPriceUnit("yen")}
-                                                    className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "yen" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
-                                                >
-                                                    円/㎡
-                                                </button>
-                                                <button
-                                                    onClick={() => setRoadPriceUnit("thousand")}
-                                                    className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "thousand" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
-                                                >
-                                                    千円/㎡
-                                                </button>
+                                {/* Road Price Inputs */}
+                                {(landValuationMethod === "road" || landValuationMethod === "auto") && (
+                                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="block text-sm font-semibold text-slate-600">
+                                                    路線価
+                                                </label>
+                                                <div className="flex items-center bg-slate-100 rounded-md p-0.5 scale-90 origin-right">
+                                                    <button
+                                                        onClick={() => setRoadPriceUnit("yen")}
+                                                        className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "yen" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
+                                                    >
+                                                        円/㎡
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setRoadPriceUnit("thousand")}
+                                                        className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "thousand" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
+                                                    >
+                                                        千円/㎡
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    value={roadPrice}
+                                                    onChange={(e) => {
+                                                        setRoadPrice(e.target.value === "" ? "" : Number(e.target.value));
+                                                        if (invalidFields.includes("roadPrice")) {
+                                                            setInvalidFields(prev => prev.filter(f => f !== "roadPrice"));
+                                                        }
+                                                    }}
+                                                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("roadPrice")
+                                                        ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
+                                                        : "bg-slate-50 border-slate-300"
+                                                        }`}
+                                                    placeholder={roadPriceUnit === "yen" ? "100000" : "100"}
+                                                />
+                                                <span className="absolute right-3 top-3 text-slate-400 text-sm pointer-events-none">
+                                                    {roadPriceUnit === "yen" ? "円" : "千円"}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="relative">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-600 mb-2">
+                                                土地面積 (㎡)
+                                            </label>
                                             <input
                                                 type="number"
-                                                value={roadPrice}
+                                                value={landArea}
                                                 onChange={(e) => {
-                                                    setRoadPrice(e.target.value === "" ? "" : Number(e.target.value));
-                                                    if (invalidFields.includes("roadPrice")) {
-                                                        setInvalidFields(prev => prev.filter(f => f !== "roadPrice"));
+                                                    setLandArea(e.target.value === "" ? "" : Number(e.target.value));
+                                                    if (invalidFields.includes("landArea")) {
+                                                        setInvalidFields(prev => prev.filter(f => f !== "landArea"));
                                                     }
                                                 }}
-                                                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("roadPrice")
+                                                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("landArea")
                                                     ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                     : "bg-slate-50 border-slate-300"
                                                     }`}
-                                                placeholder={roadPriceUnit === "yen" ? "100000" : "100"}
+                                                placeholder="100.00"
                                             />
-                                            <span className="absolute right-3 top-3 text-slate-400 text-sm pointer-events-none">
-                                                {roadPriceUnit === "yen" ? "円" : "千円"}
-                                            </span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                            土地面積 (㎡)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={landArea}
-                                            onChange={(e) => {
-                                                setLandArea(e.target.value === "" ? "" : Number(e.target.value));
-                                                if (invalidFields.includes("landArea")) {
-                                                    setInvalidFields(prev => prev.filter(f => f !== "landArea"));
-                                                }
-                                            }}
-                                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("landArea")
-                                                ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                : "bg-slate-50 border-slate-300"
-                                                }`}
-                                            placeholder="100"
-                                        />
-                                    </div>
-                                    <details className="group">
-                                        <summary className="text-xs text-slate-500 font-medium cursor-pointer hover:text-blue-600 transition-colors select-none flex items-center gap-1">
-                                            <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                            補正率など詳細設定 (未実装)
-                                        </summary>
-                                        <div className="p-3 bg-slate-50 rounded mt-2 text-xs text-slate-400">
-                                            Coming Soon...
-                                        </div>
-                                    </details>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Multiplier Inputs */}
-                            {((landValuationMethod === "multiplier") || (landValuationMethod === "auto" && roadPrice === "")) && (
-                                <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="pt-2 border-t border-slate-100"> {/* Added separator/padding */}
-                                        <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                            固定資産税評価額 (円)
+                                {/* Multiplier Inputs */}
+                                {((landValuationMethod === "multiplier") || (landValuationMethod === "auto" && roadPrice === "")) && (
+                                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="pt-2 border-t border-slate-100">
+                                            <label className="block text-sm font-semibold text-slate-600 mb-2">
+                                                固定資産税評価額 (円)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={fixedTaxValue}
+                                                onChange={(e) => {
+                                                    setFixedTaxValue(e.target.value === "" ? "" : Number(e.target.value));
+                                                    if (invalidFields.includes("fixedTaxValue")) {
+                                                        setInvalidFields(prev => prev.filter(f => f !== "fixedTaxValue"));
+                                                    }
+                                                }}
+                                                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("fixedTaxValue")
+                                                    ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
+                                                    : "bg-slate-50 border-slate-300"
+                                                    }`}
+                                                placeholder="10000000"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-600 mb-2">
+                                                評価倍率
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={multiplier}
+                                                onChange={(e) => {
+                                                    setMultiplier(e.target.value === "" ? "" : Number(e.target.value));
+                                                    if (invalidFields.includes("multiplier")) {
+                                                        setInvalidFields(prev => prev.filter(f => f !== "multiplier"));
+                                                    }
+                                                }}
+                                                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("multiplier")
+                                                    ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
+                                                    : "bg-slate-50 border-slate-300"
+                                                    }`}
+                                                placeholder="1.1"
+                                            />
+                                        </div>
+                                        <div className="text-right">
+                                            <a
+                                                href="https://www.rosenka.nta.go.jp/"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-blue-600 hover:underline flex justify-end items-center gap-1"
+                                            >
+                                                評価倍率表を確認する
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Building Information Section */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 mb-5 flex items-center">
+                                <span className="bg-blue-600 w-1.5 h-5 mr-3 rounded-sm"></span>
+                                建物情報
+                            </h2>
+                            <div className="space-y-6 flex-grow">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-600 mb-2">
+                                        構造
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={structure}
+                                            onChange={(e) => setStructure(e.target.value as StructureType)}
+                                            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none text-sm"
+                                        >
+                                            {Object.keys(STRUCTURES).map((s) => (
+                                                <option key={s} value={s}>
+                                                    {s}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 mb-1">
+                                            法定耐用年数
                                         </label>
                                         <input
                                             type="number"
-                                            value={fixedTaxValue}
-                                            onChange={(e) => {
-                                                setFixedTaxValue(e.target.value === "" ? "" : Number(e.target.value));
-                                                if (invalidFields.includes("fixedTaxValue")) {
-                                                    setInvalidFields(prev => prev.filter(f => f !== "fixedTaxValue"));
-                                                }
-                                            }}
-                                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("fixedTaxValue")
-                                                ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                : "bg-slate-50 border-slate-300"
-                                                }`}
-                                            placeholder="10000000"
+                                            value={usefulLife}
+                                            readOnly
+                                            className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 text-sm"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                            評価倍率
+                                            築年数
                                         </label>
                                         <input
                                             type="number"
-                                            step="0.01"
-                                            value={multiplier}
+                                            value={age}
                                             onChange={(e) => {
-                                                setMultiplier(e.target.value === "" ? "" : Number(e.target.value));
-                                                if (invalidFields.includes("multiplier")) {
-                                                    setInvalidFields(prev => prev.filter(f => f !== "multiplier"));
+                                                setAge(e.target.value === "" ? "" : Number(e.target.value));
+                                                if (invalidFields.includes("age")) {
+                                                    setInvalidFields(prev => prev.filter(f => f !== "age"));
                                                 }
                                             }}
-                                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("multiplier")
+                                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("age")
                                                 ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                 : "bg-slate-50 border-slate-300"
                                                 }`}
-                                            placeholder="1.1"
+                                            placeholder="10"
                                         />
                                     </div>
-                                    <div className="text-right">
-                                        <a
-                                            href="https://www.rosenka.nta.go.jp/"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-blue-600 hover:underline flex justify-end items-center gap-1"
-                                        >
-                                            評価倍率表を確認する
-                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                        </a>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 mb-1">
+                                            再調達価格単価
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={unitPrice}
+                                            readOnly
+                                            className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-600 mb-2">
+                                            延床面積 (㎡)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={floorArea}
+                                            onChange={(e) => {
+                                                setFloorArea(e.target.value === "" ? "" : Number(e.target.value));
+                                                if (invalidFields.includes("floorArea")) {
+                                                    setInvalidFields(prev => prev.filter(f => f !== "floorArea"));
+                                                }
+                                            }}
+                                            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("floorArea")
+                                                ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
+                                                : "bg-slate-50 border-slate-300"
+                                                }`}
+                                            placeholder="80.00"
+                                        />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="py-2">
+                            <button
+                                onClick={handleCalculate}
+                                className="w-full block mx-auto py-3 px-8 bg-blue-600 text-white font-bold text-base rounded-xl shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
+                            >
+                                価格を計算する
+                            </button>
+                            {error && (
+                                <p className="mt-4 text-red-600 font-bold text-center bg-red-50 p-3 rounded-lg border border-red-200 animate-in fade-in slide-in-from-top-2 text-sm">
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
+                                        </svg>
+                                        {error}
+                                    </span>
+                                </p>
                             )}
                         </div>
                     </div>
 
-                    {/* Building Information Section */}
-                    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100 h-full flex flex-col">
-                        <h2 className="text-lg font-bold text-slate-800 border-b-2 border-slate-100 pb-3 mb-6 flex items-center">
-                            <span className="bg-blue-600 w-2 h-6 mr-3 rounded-sm"></span>
-                            建物情報
-                        </h2>
-                        <div className="space-y-6 flex-grow">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                    構造
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        value={structure}
-                                        onChange={(e) => setStructure(e.target.value as StructureType)}
-                                        className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none"
-                                    >
-                                        {Object.keys(STRUCTURES).map((s) => (
-                                            <option key={s} value={s}>
-                                                {s}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                    {/* RIGHT COLUMN: DOCUMENT PREVIEW & RESULTS (Span 7) */}
+                    <div className="lg:col-span-7 space-y-6 order-1 lg:order-1 lg:sticky lg:top-8 h-fit">
+                        {/* Document Upload Section */}
+                        <FileUploader onFileSelect={handleFileUpload} isLoading={isAnalyzing} />
+
+                        {previewUrl && (
+                            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                <DocumentPreview
+                                    fileUrl={previewUrl}
+                                    fileType={fileType}
+                                    coordinates={coordinates}
+                                />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                                        法定耐用年数
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={usefulLife}
-                                        readOnly
-                                        className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                        築年数
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={age}
-                                        onChange={(e) => {
-                                            setAge(e.target.value === "" ? "" : Number(e.target.value));
-                                            if (invalidFields.includes("age")) {
-                                                setInvalidFields(prev => prev.filter(f => f !== "age"));
-                                            }
-                                        }}
-                                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("age")
-                                            ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                            : "bg-slate-50 border-slate-300"
-                                            }`}
-                                        placeholder="10"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                                        再調達価格単価
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={unitPrice}
-                                        readOnly
-                                        className="w-full p-3 bg-slate-100 border border-slate-200 rounded-lg text-slate-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-600 mb-2">
-                                        延床面積 (㎡)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={floorArea}
-                                        onChange={(e) => {
-                                            setFloorArea(e.target.value === "" ? "" : Number(e.target.value));
-                                            if (invalidFields.includes("floorArea")) {
-                                                setInvalidFields(prev => prev.filter(f => f !== "floorArea"));
-                                            }
-                                        }}
-                                        className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("floorArea")
-                                            ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                            : "bg-slate-50 border-slate-300"
-                                            }`}
-                                        placeholder="80"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        )}
+
                     </div>
                 </div>
 
                 {/* Result Summary Card (Small Preview) */}
 
 
-                <div className="py-2">
-                    <button
-                        onClick={handleCalculate}
-                        className="w-full md:w-auto md:min-w-[300px] block mx-auto py-4 px-8 bg-blue-600 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
-                    >
-                        価格を計算する
-                    </button>
-                    {error && (
-                        <p className="mt-4 text-red-600 font-bold text-center bg-red-50 p-3 rounded-lg border border-red-200 animate-in fade-in slide-in-from-top-2">
-                            <span className="flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
-                                </svg>
-                                {error}
-                            </span>
-                        </p>
-                    )}
-                </div>
-
                 {results && (
-                    <div
-                        id="result-card"
-                        className="relative bg-white rounded-xl shadow-lg border border-black overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
-                    >
-                        <div className="bg-slate-50 px-6 py-4 border-b border-black flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                {TRANSLATIONS[lang].title}
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center bg-white border border-gray-200 rounded-md px-2 py-1 gap-1" data-html2canvas-ignore="true">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-slate-500">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S12 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S12 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                                    </svg>
-                                    <select
-                                        value={lang}
-                                        onChange={(e) => setLang(e.target.value as Lang)}
-                                        className="text-sm bg-transparent outline-none text-slate-700 cursor-pointer"
-                                        title="言語を選択 / Select Language"
-                                    >
-                                        <option value="ja">日本語</option>
-                                        <option value="en">English</option>
-                                        <option value="cn">中文</option>
-                                    </select>
-                                </div>
-
-                            </div>
+                    <div className="space-y-4">
+                        {/* Controls outside the report */}
+                        <div className="flex justify-end pr-2">
+                            <select
+                                value={lang}
+                                onChange={(e) => setLang(e.target.value as Lang)}
+                                className="text-xs bg-slate-100 border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none"
+                            >
+                                <option value="ja">日本語</option>
+                                <option value="en">English</option>
+                                <option value="cn">中文</option>
+                            </select>
                         </div>
 
-                        <div className="p-6 md:p-8 space-y-8">
-                            {/* Land Result */}
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-black">
-                                <div className="flex-1 w-full text-center md:text-left space-y-2">
-                                    <div className="flex items-center justify-center md:justify-start gap-2">
-                                        <p className="text-slate-600 text-lg font-bold">{TRANSLATIONS[lang].landPrice}</p>
-                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">
-                                            {TRANSLATIONS[lang].method[results.snapshot.method as "road" | "multiplier"]}
-                                        </span>
+                        <div
+                            id="result-card"
+                            className="relative bg-white text-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mx-auto max-w-[800px]"
+                        >
+                            {/* Decorative Top Border */}
+                            <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+
+                            <div className="p-8 md:p-12 flex flex-col h-full bg-[url('https://www.transparenttextures.com/patterns/subtle-paper.png')]">
+
+                                {/* Header */}
+                                <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-serif tracking-widest mb-1">不動産積算価格シミュレーション</p>
+                                        <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-wide">
+                                            参考積算価格
+                                        </h2>
                                     </div>
-                                    <p className="text-sm text-slate-500">
-                                        {results.snapshot.method === "road" ? (
-                                            TRANSLATIONS[lang].formula.land(
-                                                formatCurrency(results.snapshot.roadPrice),
-                                                results.snapshot.landArea.toLocaleString(),
-                                                formatCurrency(results.landPrice)
-                                            )
-                                        ) : (
-                                            `固定資産税評価額（${formatCurrency(results.snapshot.fixedTaxValue)}） × 倍率（${results.snapshot.multiplier}） ＝ ${formatCurrency(results.landPrice)}`
-                                        )}
-                                    </p>
+                                    <div className="text-right">
+                                        <p className="text-xs text-slate-400">作成日</p>
+                                        <p className="text-sm font-medium">{new Date().toLocaleDateString('ja-JP')}</p>
+                                    </div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800 whitespace-nowrap">
-                                    {formatCurrency(results.landPrice)}
-                                </div>
-                            </div>
 
-                            {/* Building Result */}
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-black">
-                                <div className="flex-1 w-full text-center md:text-left space-y-2">
-                                    <p className="text-slate-600 text-lg font-bold">{TRANSLATIONS[lang].buildingPrice}</p>
-                                    <p className="text-sm text-slate-500 leading-relaxed">
-                                        {TRANSLATIONS[lang].formula.building(
-                                            formatCurrency(results.snapshot.unitPrice),
-                                            results.snapshot.floorArea.toLocaleString(),
-                                            results.snapshot.usefulLife,
-                                            results.snapshot.age,
-                                            formatCurrency(results.buildingPrice)
-                                        )}
+                                {/* Property Info */}
+                                <div className="mb-6">
+                                    <p className="text-xs text-slate-400 mb-1">対象不動産</p>
+                                    <p className="text-lg font-bold border-b border-slate-200 pb-1">
+                                        {selectedAddress || "（住所未入力）"}
                                     </p>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800 whitespace-nowrap">
-                                    {formatCurrency(results.buildingPrice)}
-                                </div>
-                            </div>
 
-                            {/* Total Result */}
-                            <div className="flex flex-col md:flex-row items-start justify-between gap-4 pt-2">
-                                <div className="flex-1 w-full text-center md:text-left space-y-2">
-                                    <p className="text-slate-600 text-lg font-bold">{TRANSLATIONS[lang].total}</p>
-                                    <p className="text-sm text-slate-500">
-                                        {TRANSLATIONS[lang].formula.total(
-                                            formatCurrency(results.landPrice),
-                                            formatCurrency(results.buildingPrice),
-                                            formatCurrency(results.total)
-                                        )}
-                                    </p>
+                                {/* Main Content Grid */}
+                                <div className="space-y-4">
+
+                                    {/* Land Section */}
+                                    <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-blue-600 text-white p-1.5 rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-800">土地評価額</h3>
+                                                <p className="text-xs text-slate-500">
+                                                    {results.snapshot.method === "road" ? "路線価法による試算" : "倍率法による試算"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-baseline mb-2">
+                                            <div className="text-sm text-slate-500">
+                                                {results.snapshot.method === "road" ? (
+                                                    <span>
+                                                        路線価 <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.roadPrice)}</span>
+                                                        <span className="mx-2">×</span>
+                                                        地積 <span className="font-medium text-slate-700">{results.snapshot.landArea.toLocaleString()}㎡</span>
+                                                    </span>
+                                                ) : (
+                                                    <span>
+                                                        固定資産税評価 <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.fixedTaxValue)}</span>
+                                                        <span className="mx-2">×</span>
+                                                        倍率 <span className="font-medium text-slate-700">{results.snapshot.multiplier}</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-2xl font-bold text-slate-800">
+                                                {formatCurrency(results.landPrice)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Building Section */}
+                                    <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-indigo-600 text-white p-1.5 rounded">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m1.5.5-1.5-.5M6.75 7.364V3h-3v18m3-13.636 10.5-3.819" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-800">建物評価額</h3>
+                                                <p className="text-xs text-slate-500">原価法による試算（{structure} / 築{age}年）</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-baseline mb-2">
+                                            <div className="text-sm text-slate-500 w-full">
+                                                <p className="leading-relaxed">
+                                                    {TRANSLATIONS[lang].formula.building(
+                                                        formatCurrency(results.snapshot.unitPrice),
+                                                        results.snapshot.floorArea.toLocaleString(),
+                                                        results.snapshot.usefulLife,
+                                                        results.snapshot.age,
+                                                        formatCurrency(results.buildingPrice)
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end mt-2">
+                                            <div className="text-2xl font-bold text-slate-800">
+                                                {formatCurrency(results.buildingPrice)}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
-                                <div className="text-4xl md:text-5xl font-extrabold text-blue-700 tracking-tight whitespace-nowrap">
-                                    {formatCurrency(results.total)}
+
+                                {/* Total Price Section */}
+                                <div className="mt-4 pt-4 border-t-2 border-slate-800">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xl font-bold text-slate-700">積算価格 合計</h3>
+                                        <div className="text-5xl font-serif font-bold text-indigo-900 subpixel-antialiased">
+                                            {formatCurrency(results.total)}
+                                        </div>
+                                    </div>
+                                    <p className="text-right text-xs text-slate-400 mt-2">※本試算結果は概算であり、実際の評価額を保証するものではありません。</p>
                                 </div>
+
+                                {/* Footer Logo/Brand */}
+                                <div className="mt-8 pt-4 text-center opacity-40">
+                                    <div className="flex items-center justify-center gap-2 text-slate-400 font-serif italic">
+                                        <span className="h-px w-8 bg-slate-300"></span>
+                                        <span>Sekisan App Simulation</span>
+                                        <span className="h-px w-8 bg-slate-300"></span>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -922,8 +1025,7 @@ export default function CalcPage() {
             <div
                 className={`fixed inset-0 bg-white pointer-events-none z-[9999] transition-opacity duration-200 ease-out ${isFlashing ? "opacity-80" : "opacity-0"
                     }`}
-                data-html2canvas-ignore="true"
             />
-        </main>
+        </main >
     );
 }
