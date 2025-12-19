@@ -272,7 +272,7 @@ export default function CalcPage() {
 
             // Map new schema to state
             if (info.area_m2) setLandArea(info.area_m2);
-            // floorArea is skipped as per new schema
+            if (info.floorArea) setFloorArea(info.floorArea);
 
             if (info.structure) {
                 const validStructures = Object.keys(STRUCTURES);

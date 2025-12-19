@@ -61,10 +61,12 @@ export async function POST(req: NextRequest) {
                 "buildingType": "string|null (Mansion, House, Land, etc.)", 
                 "structure": "string|null (RC, SRC, Wood, Steel)", 
                 "floors": "string|null (e.g. 2F / 10F)", 
-                "area_m2": "number|null (Land area in m2)", 
+                "area_m2": "number|null (Land area in m2)",
+                "floorArea": "number|null (Building floor area in m2)",
                 "workType": "string|null (New, Renovation, etc.)",
                 "roadPrice": "number|null (Road Price/Rosenka if available)",
-                "age": "number|null (Building age in years)"
+                "age": "number|null (Building age in years)",
+                "usefulLife": "number|null (Useful life in years)"
               },
               "estimate": {
                 "currency": "JPY",
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
               },
               "coordinates": {
                  "landArea": [number, number, number, number] | null,
+                 "floorArea": [number, number, number, number] | null,
                  "structure": [number, number, number, number] | null,
                  "address": [number, number, number, number] | null,
                  "roadPrice": [number, number, number, number] | null,
@@ -141,8 +144,15 @@ export async function POST(req: NextRequest) {
                 throw new Error("Empty response from Vertex AI");
             }
 
-            // Vertex AI usually returns clean JSON with responseMimeType, but safeguards are good.
-            const jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
+            // Improved JSON extraction: find first '{' and last '}'
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+
+            if (start === -1 || end === -1 || start > end) {
+                throw new Error("Valid JSON object not found in response");
+            }
+
+            const jsonStr = text.substring(start, end + 1);
             const data = JSON.parse(jsonStr);
 
             return NextResponse.json(data);
