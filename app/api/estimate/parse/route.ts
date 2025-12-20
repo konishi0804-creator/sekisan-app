@@ -75,6 +75,16 @@ export async function POST(req: NextRequest) {
                   { 
                     "section": "string|null (Category)", 
                     "name": "string (Item Name)", 
+                    "properties": {
+                        "box": {
+                            "type": "array",
+                            "items": { "type": "number" },
+                            "description": "[ymin, xmin, ymax, xmax] coordinates (0-1000 scale) of the BOUNDING BOX containing ONLY the extracting value. Be extremely precise."
+                        },
+                        "page": { "type": "integer", "description": "Page number (1-based) where the value was found" }
+                    },
+                    "required": ["box", "page"],
+                    "additionalProperties": false,
                     "spec": "string|null (Specification)", 
                     "unit": "string|null", 
                     "quantity": "number|null", 
@@ -90,12 +100,12 @@ export async function POST(req: NextRequest) {
                 }
               },
               "coordinates": {
-                 "landArea": [number, number, number, number] | null,
-                 "floorArea": [number, number, number, number] | null,
-                 "structure": [number, number, number, number] | null,
-                 "address": [number, number, number, number] | null,
-                 "roadPrice": [number, number, number, number] | null,
-                 "age": [number, number, number, number] | null
+                 "landArea": { "box": [number, number, number, number], "page": number } | null,
+                 "floorArea": { "box": [number, number, number, number], "page": number } | null,
+                 "structure": { "box": [number, number, number, number], "page": number } | null,
+                 "address": { "box": [number, number, number, number], "page": number } | null,
+                 "roadPrice": { "box": [number, number, number, number], "page": number } | null,
+                 "age": { "box": [number, number, number, number], "page": number } | null
               },
               "missingFields": [
                 { "field": "string", "reason": "string (Why is it missing?)", "suggestedWhereToFind": "string|null" }
@@ -107,11 +117,18 @@ export async function POST(req: NextRequest) {
             - "landArea" should be mapped to planInfo.area_m2 (Land Area).
             - "structure" should be normalized: "木造", "軽量鉄骨造", "重量鉄骨造", "RC造・SRC造".
             - "roadPrice" if explicit.
+            - "age" MUST be calculated based on "Construction Date" relative to ${new Date().getFullYear()}.
+              - Support Japanese Calendar: 
+                - Showa (昭和) X year = 1925 + X
+                - Heisei (平成) X year = 1988 + X
+                - Reiwa (令和) X year = 2018 + X
+              - Example: "平成10年新築" -> 1998 -> Age = ${new Date().getFullYear()} - 1998 = ${new Date().getFullYear() - 1998}.
+              - Example: "昭和60年" -> 1985 -> Age = ${new Date().getFullYear()} - 1985 = ${new Date().getFullYear() - 1985}.
 
             Coordinates Instructions:
-            - For "coordinates" field, provide the bounding box [ymin, xmin, ymax, xmax] of the text source in the image.
-            - Coordinates must be normalized to 1000 scale (0-1000).
-            - Example: [100, 200, 150, 400] means ymin=10% from top, xmin=20% from left, etc.
+            - For "coordinates" field, provide an object { "box": [ymin, xmin, ymax, xmax], "page": number }.
+            - "box": bounding box [ymin, xmin, ymax, xmax] normalized to 1000 scale (0-1000).
+            - "page": The 1-based page number where this text was found (e.g., 1 for the first page).
             - If value not found or page is not image, set to null.
             `
         });

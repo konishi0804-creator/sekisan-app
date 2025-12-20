@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import html2canvas from "html2canvas";
 
 import FileUploader from "../../components/FileUploader";
 import DocumentPreview from "../../components/DocumentPreview";
@@ -41,84 +42,177 @@ type Lang = "ja" | "en" | "cn";
 
 const TRANSLATIONS = {
     ja: {
+        subtitle: "不動産積算価格シミュレーション",
         title: "参考積算価格",
-        landPrice: "土地価格",
-        roadPrice: "路線価",
-        landArea: "土地面積",
-        buildingPrice: "建物価格",
-        unitPrice: "再調達単価",
-        floorArea: "延床面積",
-        usefulLife: "法定耐用年数",
-        age: "築年数",
-        total: "参考積算価格",
-        method: {
-            road: "路線価方式",
-            multiplier: "倍率方式"
+        date: "作成日",
+        sections: {
+            target: "対象不動産",
+            noAddress: "（住所未入力）",
+            land: "土地評価額",
+            landMethod: {
+                road: "路線価法による試算",
+                multiplier: "倍率法による試算"
+            },
+            landDetails: {
+                roadPrice: "路線価",
+                area: "地積",
+                fixedTax: "固定資産税評価",
+                multiplier: "倍率"
+            },
+            building: "建物評価額",
+            buildingDetails: {
+                unitPrice: "再調達単価",
+                floorArea: "延床面積",
+                usefulLife: "法定耐用年数",
+                age: "築年数"
+            },
+            buildingMethod: (structure: string, age: number) => `原価法による試算（${structure} / 築${age}年）`,
+            total: "積算価格 合計",
+            disclaimer: "※本試算結果は概算であり、実際の評価額を保証するものではありません。"
+        },
+        structures: {
+            "木造": "木造",
+            "軽量鉄骨造": "軽量鉄骨造",
+            "重量鉄骨造": "重量鉄骨造",
+            "RC造・SRC造": "RC造・SRC造"
         },
         formula: {
             land: (road: string, area: string, total: string) =>
                 `土地価格 ＝ 路線価（${road}） × 土地面積（${area}㎡） ＝ ${total}`,
             building: (unit: string, area: string, life: number, age: number, total: string) => (
-                <>
-                    建物価格 ＝ 再調達単価（{unit}） × 延床面積（{area}㎡）<br />
-                    × {'{'} (法定耐用年数 {life}年 − 築年数 {age}年) ÷ 法定耐用年数 {life}年 {'}'} ＝ {total}
-                </>
+                <div className="inline-block align-middle">
+                    <span>建物価格 ＝ 再調達単価（{unit}） × 延床面積（{area}㎡）</span>
+                    <div className="inline-flex items-center ml-1 align-middle">
+                        <span className="mr-2">×</span>
+                        <div className="flex flex-col items-center text-center leading-none text-xs sm:text-sm">
+                            <span className="border-b border-slate-500 pb-1 mb-1 px-1">
+                                法定耐用年数 {life}年 − 築年数 {age}年
+                            </span>
+                            <span className="">
+                                法定耐用年数 {life}年
+                            </span>
+                        </div>
+                        <span className="ml-2">＝ {total}</span>
+                    </div>
+                </div>
             ),
             total: (land: string, building: string, total: string) =>
                 `参考積算価格 ＝ 土地価格（${land}） ＋ 建物価格（${building}） ＝ ${total}`
         }
     },
     en: {
+        subtitle: "Real Estate Value Simulation",
         title: "Estimated Price",
-        landPrice: "Land Price",
-        roadPrice: "Street Value",
-        landArea: "Land Area",
-        buildingPrice: "Building Price",
-        unitPrice: "Replacement Cost",
-        floorArea: "Floor Area",
-        usefulLife: "Useful Life",
-        age: "Age",
-        total: "Estimated Total",
-        method: {
-            road: "Road Price Method",
-            multiplier: "Multiplier Method"
+        date: "Date",
+        sections: {
+            target: "Property Address",
+            noAddress: "(No Address)",
+            land: "Land Valuation",
+            landMethod: {
+                road: "Roadside Value Method",
+                multiplier: "Multiplier Method"
+            },
+            landDetails: {
+                roadPrice: "Road Price",
+                area: "Land Area",
+                fixedTax: "Fixed Tax Value",
+                multiplier: "Multiplier"
+            },
+            building: "Building Valuation",
+            buildingDetails: {
+                unitPrice: "Replacement Cost",
+                floorArea: "Floor Area",
+                usefulLife: "Useful Life",
+                age: "Age"
+            },
+            buildingMethod: (structure: string, age: number) => `Cost Method (${structure} / ${age} years old)`,
+            total: "Estimated Total",
+            disclaimer: "*This result is an approximation and does not guarantee the actual appraisal value."
+        },
+        structures: {
+            "木造": "Wood",
+            "軽量鉄骨造": "Light Steel",
+            "重量鉄骨造": "Heavy Steel",
+            "RC造・SRC造": "RC/SRC"
         },
         formula: {
             land: (road: string, area: string, total: string) =>
-                `Land Price = Street Value (${road}) × Land Area (${area}㎡) = ${total}`,
+                `Land Price = Road Price (${road}) × Area (${area}㎡) = ${total}`,
             building: (unit: string, area: string, life: number, age: number, total: string) => (
-                <>
-                    Building Price = Replacement Cost ({unit}) × Floor Area ({area}㎡)<br />
-                    × {'{'} (Useful Life {life}y − Age {age}y) ÷ Useful Life {life}y {'}'} = {total}
-                </>
+                <div className="inline-block align-middle">
+                    <span>Building Price = Replacement Cost ({unit}) × Floor Area ({area}㎡)</span>
+                    <div className="inline-flex items-center ml-1 align-middle">
+                        <span className="mr-2">×</span>
+                        <div className="flex flex-col items-center text-center leading-none text-xs sm:text-sm">
+                            <span className="border-b border-slate-500 pb-1 mb-1 px-1">
+                                Useful Life {life}y − Age {age}y
+                            </span>
+                            <span className="">
+                                Useful Life {life}y
+                            </span>
+                        </div>
+                        <span className="ml-2">= {total}</span>
+                    </div>
+                </div>
             ),
             total: (land: string, building: string, total: string) =>
                 `Total = Land Price (${land}) + Building Price (${building}) = ${total}`
         }
     },
     cn: {
+        subtitle: "房地产积算价格模拟",
         title: "参考估算价格",
-        landPrice: "土地价格",
-        roadPrice: "路线价",
-        landArea: "土地面积",
-        buildingPrice: "建筑价格",
-        unitPrice: "重置单价",
-        floorArea: "建筑面积",
-        usefulLife: "法定耐用年限",
-        age: "房龄",
-        total: "参考估算价格",
-        method: {
-            road: "路线价方式",
-            multiplier: "倍率方式"
+        date: "日期",
+        sections: {
+            target: "目标房产",
+            noAddress: "（未输入地址）",
+            land: "土地估价额",
+            landMethod: {
+                road: "路线价法试算",
+                multiplier: "倍率法试算"
+            },
+            landDetails: {
+                roadPrice: "路线价",
+                area: "土地面积",
+                fixedTax: "固定资产税评估",
+                multiplier: "倍率"
+            },
+            building: "建筑估价额",
+            buildingDetails: {
+                unitPrice: "重置单价",
+                floorArea: "建筑面积",
+                usefulLife: "法定耐用年限",
+                age: "房龄"
+            },
+            buildingMethod: (structure: string, age: number) => `原价法试算（${structure} / 房龄${age}年）`,
+            total: "积算价格 合计",
+            disclaimer: "※本试算结果仅为概算，不保证实际评估额。"
+        },
+        structures: {
+            "木造": "木造",
+            "軽量鉄骨造": "轻量铁骨",
+            "重量鉄骨造": "重量铁骨",
+            "RC造・SRC造": "RC/SRC"
         },
         formula: {
             land: (road: string, area: string, total: string) =>
                 `土地价格 ＝ 路线价（${road}） × 土地面积（${area}㎡） ＝ ${total}`,
             building: (unit: string, area: string, life: number, age: number, total: string) => (
-                <>
-                    建筑价格 ＝ 重置单价（{unit}） × 建筑面积（{area}㎡）<br />
-                    × {'{'} (法定耐用年限 {life}年 − 房龄 {age}年) ÷ 法定耐用年限 {life}年 {'}'} ＝ {total}
-                </>
+                <div className="inline-block align-middle">
+                    <span>建筑价格 ＝ 重置单价（{unit}） × 建筑面积（{area}㎡）</span>
+                    <div className="inline-flex items-center ml-1 align-middle">
+                        <span className="mr-2">×</span>
+                        <div className="flex flex-col items-center text-center leading-none text-xs sm:text-sm">
+                            <span className="border-b border-slate-500 pb-1 mb-1 px-1">
+                                法定耐用年限 {life}年 − 房龄 {age}年
+                            </span>
+                            <span className="">
+                                法定耐用年限 {life}年
+                            </span>
+                        </div>
+                        <span className="ml-2">＝ {total}</span>
+                    </div>
+                </div>
             ),
             total: (land: string, building: string, total: string) =>
                 `参考估算价格 ＝ 土地价格（${land}） ＋ 建筑价格（${building}） ＝ ${total}`
@@ -156,18 +250,23 @@ export default function CalcPage() {
     // Address Extraction State
     const [addressCandidates, setAddressCandidates] = useState<string[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<string>("");
+    const [targetPropertyName, setTargetPropertyName] = useState<string>(""); // New Custom Property Name State
 
     // Preview State
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [fileType, setFileType] = useState<string>("");
 
-    type Coordinates = [number, number, number, number];
+    type CoordinateItem = {
+        box: [number, number, number, number];
+        page: number;
+    };
     type ExtractedCoordinates = {
-        landArea?: Coordinates | null;
-        structure?: Coordinates | null;
-        address?: Coordinates | null;
-        roadPrice?: Coordinates | null;
-        age?: Coordinates | null;
+        landArea?: CoordinateItem | null;
+        structure?: CoordinateItem | null;
+        address?: CoordinateItem | null;
+        roadPrice?: CoordinateItem | null;
+        age?: CoordinateItem | null;
+        floorArea?: CoordinateItem | null;
     } | null;
 
     const [coordinates, setCoordinates] = useState<ExtractedCoordinates>(null);
@@ -199,14 +298,12 @@ export default function CalcPage() {
 
         // Preview Setup
         if (files.length > 0) {
-            const file = files[0];
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-            setFileType(file.type);
+            // Revoke old URLs
+            previewUrls.forEach(url => URL.revokeObjectURL(url));
 
-            // Cleanup previous URL if needed (useEffect cleanup handles component unmount, but here we replace)
-            // Ideally we track the previous one to revoke, but React state update batching makes it simple enough to just let GC handle small leaks or rely on unmount cleanup if we added it. 
-            // For robustness, let's just rely on the new one being set.
+            const urls = files.map(file => URL.createObjectURL(file));
+            setPreviewUrls(urls);
+            setFileType(files[0].type);
         }
 
         try {
@@ -375,30 +472,30 @@ export default function CalcPage() {
         // Validation based on effective method
         if (effectiveMethod === "road") {
             if (roadPrice === "") {
-                missingFields.push(TRANSLATIONS[lang].roadPrice);
+                missingFields.push(TRANSLATIONS[lang].sections.landDetails.roadPrice);
                 newInvalidFields.push("roadPrice");
             }
             if (landArea === "") {
-                missingFields.push(TRANSLATIONS[lang].landArea);
+                missingFields.push(TRANSLATIONS[lang].sections.landDetails.area);
                 newInvalidFields.push("landArea");
             }
         } else if (effectiveMethod === "multiplier") {
             if (fixedTaxValue === "") {
-                missingFields.push("固定資産税評価額"); // TODO: Add to translations
+                missingFields.push(TRANSLATIONS[lang].sections.landDetails.fixedTax);
                 newInvalidFields.push("fixedTaxValue");
             }
             if (multiplier === "") {
-                missingFields.push("評価倍率"); // TODO: Add to translations
+                missingFields.push(TRANSLATIONS[lang].sections.landDetails.multiplier);
                 newInvalidFields.push("multiplier");
             }
         }
 
         if (age === "") {
-            missingFields.push(TRANSLATIONS[lang].age);
+            missingFields.push(TRANSLATIONS[lang].sections.buildingDetails.age);
             newInvalidFields.push("age");
         }
         if (floorArea === "") {
-            missingFields.push(TRANSLATIONS[lang].floorArea);
+            missingFields.push(TRANSLATIONS[lang].sections.buildingDetails.floorArea);
             newInvalidFields.push("floorArea");
         }
 
@@ -469,34 +566,83 @@ export default function CalcPage() {
         return val.toLocaleString("ja-JP", { style: "currency", currency: "JPY" });
     };
 
-    return (
-        <main className="min-h-screen bg-slate-50/50 dark:bg-slate-900/50 p-4 md:p-6 lg:p-8 text-slate-700 dark:text-slate-200">
-            <div className="max-w-[1600px] mx-auto">
+    const handlePrint = () => {
+        window.print();
+    };
 
-                {/* Header Section */}
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
-                        不動産積算シミュレーション
+    const handleScreenshot = async () => {
+        const element = document.getElementById("result-card");
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+            } as any);
+
+            if (navigator.share && navigator.canShare) {
+                canvas.toBlob(async (blob) => {
+                    if (!blob) return;
+                    const file = new File([blob], "sekisan_result.png", { type: "image/png" });
+                    const shareData = {
+                        files: [file],
+                        title: '積算価格シミュレーション結果',
+                    };
+                    if (navigator.canShare(shareData)) {
+                        try {
+                            await navigator.share(shareData);
+                            return;
+                        } catch (err) {
+                            console.log("Share failed, falling back to clipboard", err);
+                        }
+                    } else {
+                        // Fallback if files sharing not supported but share is
+                        const link = document.createElement('a');
+                        link.download = 'sekisan_result.png';
+                        link.href = canvas.toDataURL();
+                        link.click();
+                    }
+                });
+            } else {
+                // PC / Clipboard Fallback
+                canvas.toBlob(async (blob) => {
+                    if (!blob) return;
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ "image/png": blob })
+                        ]);
+                        alert("画像をクリップボードにコピーしました！");
+                    } catch (err) {
+                        const link = document.createElement('a');
+                        link.download = 'sekisan_result.png';
+                        link.href = canvas.toDataURL();
+                        link.click();
+                    }
+                });
+            }
+
+        } catch (err) {
+            console.error("Screenshot failed", err);
+            alert("画像の保存に失敗しました");
+        }
+    };
+
+    return (
+        <main className="min-h-screen bg-[#f3f4f6] pb-20 font-sans print:bg-white print:pb-0">
+            <div className="max-w-6xl mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none">
+
+                {/* Header - Hide on Print */}
+                <div className="mb-8 text-center print:hidden">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-700 tracking-tight">
+                        不動産積算価格シミュレーション
                     </h1>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-                        資料を見ながら情報を入力して、概算評価額を計算します
+                    <p className="mt-2 text-slate-500 text-sm">
+                        土地・建物情報を入力して、積算評価額を自動計算します。
                     </p>
-                    {error && (
-                        <div className="mt-4 mx-auto max-w-2xl bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 text-left">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-red-600 shrink-0 mt-0.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9.004 9.004 0 11-18 0 9.004 9.004 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
-                            </svg>
-                            <div>
-                                <h3 className="text-red-800 font-bold text-sm mb-1">エラーが発生しました</h3>
-                                <p className="text-red-700 text-sm whitespace-pre-wrap leading-relaxed">
-                                    {error}
-                                </p>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start print:hidden">
 
                     {/* LEFT COLUMN: INPUT FORMS (Span 5) */}
                     <div className="lg:col-span-5 space-y-6 order-2 lg:order-2">
@@ -552,6 +698,18 @@ export default function CalcPage() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
                                             </svg>
                                         </button>
+                                    </div>
+                                    <div className="mt-3">
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1">
+                                            物件名 (任意)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={targetPropertyName}
+                                            onChange={(e) => setTargetPropertyName(e.target.value)}
+                                            placeholder="例：鈴木様邸、〇〇マンション"
+                                            className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50"
+                                        />
                                     </div>
 
                                     <div className="mt-3">
@@ -857,30 +1015,50 @@ export default function CalcPage() {
                         {/* Document Upload Section */}
                         <FileUploader onFileSelect={handleFileUpload} isLoading={isAnalyzing} />
 
-                        {previewUrl && (
-                            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                                <DocumentPreview
-                                    fileUrl={previewUrl}
-                                    fileType={fileType}
-                                    coordinates={coordinates}
-                                />
-                            </div>
-                        )}
-
+                        <DocumentPreview
+                            fileUrls={previewUrls}
+                            coordinates={coordinates}
+                        />
                     </div>
                 </div>
 
                 {/* Result Summary Card (Small Preview) */}
-
-
                 {results && (
                     <div className="space-y-4">
-                        {/* Controls outside the report */}
-                        <div className="flex justify-end pr-2">
+                        {/* Controls Toolbar */}
+                        <div className="flex justify-end items-center gap-2 print:hidden">
+                            {/* Screenshot Button */}
+                            <button
+                                onClick={handleScreenshot}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                                title="画像を保存/コピー"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                                </svg>
+                                保存・コピー
+                            </button>
+
+                            {/* Print Button */}
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                                title="印刷"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008h-.008V10.5Zm-3 0h.008v.008h-.008V10.5Z" />
+                                </svg>
+                                印刷
+                            </button>
+
+                            {/* Separator */}
+                            <div className="w-px h-4 bg-slate-300 mx-1"></div>
+
+                            {/* Lang Selector */}
                             <select
                                 value={lang}
                                 onChange={(e) => setLang(e.target.value as Lang)}
-                                className="text-xs bg-slate-100 border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none"
+                                className="text-xs bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-600 outline-none hover:bg-slate-50 cursor-pointer shadow-sm"
                             >
                                 <option value="ja">日本語</option>
                                 <option value="en">English</option>
@@ -890,32 +1068,32 @@ export default function CalcPage() {
 
                         <div
                             id="result-card"
-                            className="relative bg-white text-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mx-auto max-w-[800px]"
+                            className="relative bg-white text-slate-800 shadow-2xl print:shadow-none overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mx-auto max-w-[800px] print:max-w-none print:w-full"
                         >
                             {/* Decorative Top Border */}
                             <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
 
-                            <div className="p-8 md:p-12 flex flex-col h-full bg-[url('https://www.transparenttextures.com/patterns/subtle-paper.png')]">
+                            <div className="p-8 md:p-12 flex flex-col h-full bg-[url('https://www.transparenttextures.com/patterns/subtle-paper.png')] print:p-0 print:bg-none">
 
                                 {/* Header */}
                                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
                                     <div>
-                                        <p className="text-xs text-slate-500 font-serif tracking-widest mb-1">不動産積算価格シミュレーション</p>
+                                        <p className="text-xs text-slate-500 font-serif tracking-widest mb-1">{TRANSLATIONS[lang].subtitle}</p>
                                         <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-wide">
-                                            参考積算価格
+                                            {TRANSLATIONS[lang].title}
                                         </h2>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-xs text-slate-400">作成日</p>
+                                        <p className="text-xs text-slate-400">{TRANSLATIONS[lang].date}</p>
                                         <p className="text-sm font-medium">{new Date().toLocaleDateString('ja-JP')}</p>
                                     </div>
                                 </div>
 
                                 {/* Property Info */}
                                 <div className="mb-6">
-                                    <p className="text-xs text-slate-400 mb-1">対象不動産</p>
+                                    <p className="text-xs text-slate-400 mb-1">{TRANSLATIONS[lang].sections.target}</p>
                                     <p className="text-lg font-bold border-b border-slate-200 pb-1">
-                                        {selectedAddress || "（住所未入力）"}
+                                        {targetPropertyName || selectedAddress || TRANSLATIONS[lang].sections.noAddress}
                                     </p>
                                 </div>
 
@@ -925,15 +1103,15 @@ export default function CalcPage() {
                                     {/* Land Section */}
                                     <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100">
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="bg-blue-600 text-white p-1.5 rounded">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg shadow-md shadow-blue-100 flex-shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.159.69.159 1.006 0Z" />
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-lg text-slate-800">土地評価額</h3>
+                                                <h3 className="font-bold text-lg text-slate-800">{TRANSLATIONS[lang].sections.land}</h3>
                                                 <p className="text-xs text-slate-500">
-                                                    {results.snapshot.method === "road" ? "路線価法による試算" : "倍率法による試算"}
+                                                    {results.snapshot.method === "road" ? TRANSLATIONS[lang].sections.landMethod.road : TRANSLATIONS[lang].sections.landMethod.multiplier}
                                                 </p>
                                             </div>
                                         </div>
@@ -942,15 +1120,15 @@ export default function CalcPage() {
                                             <div className="text-sm text-slate-500">
                                                 {results.snapshot.method === "road" ? (
                                                     <span>
-                                                        路線価 <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.roadPrice)}</span>
+                                                        {TRANSLATIONS[lang].sections.landDetails.roadPrice} <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.roadPrice)}</span>
                                                         <span className="mx-2">×</span>
-                                                        地積 <span className="font-medium text-slate-700">{results.snapshot.landArea.toLocaleString()}㎡</span>
+                                                        {TRANSLATIONS[lang].sections.landDetails.area} <span className="font-medium text-slate-700">{results.snapshot.landArea.toLocaleString()}㎡</span>
                                                     </span>
                                                 ) : (
                                                     <span>
-                                                        固定資産税評価 <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.fixedTaxValue)}</span>
+                                                        {TRANSLATIONS[lang].sections.landDetails.fixedTax} <span className="font-medium text-slate-700">{formatCurrency(results.snapshot.fixedTaxValue)}</span>
                                                         <span className="mx-2">×</span>
-                                                        倍率 <span className="font-medium text-slate-700">{results.snapshot.multiplier}</span>
+                                                        {TRANSLATIONS[lang].sections.landDetails.multiplier} <span className="font-medium text-slate-700">{results.snapshot.multiplier}</span>
                                                     </span>
                                                 )}
                                             </div>
@@ -963,14 +1141,14 @@ export default function CalcPage() {
                                     {/* Building Section */}
                                     <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100">
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="bg-indigo-600 text-white p-1.5 rounded">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m1.5.5-1.5-.5M6.75 7.364V3h-3v18m3-13.636 10.5-3.819" />
+                                            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 rounded-lg shadow-md shadow-indigo-100 flex-shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-lg text-slate-800">建物評価額</h3>
-                                                <p className="text-xs text-slate-500">原価法による試算（{structure} / 築{age}年）</p>
+                                                <h3 className="font-bold text-lg text-slate-800">{TRANSLATIONS[lang].sections.building}</h3>
+                                                <p className="text-xs text-slate-500">{TRANSLATIONS[lang].sections.buildingMethod(TRANSLATIONS[lang].structures[structure] || structure, results.snapshot.age)}</p>
                                             </div>
                                         </div>
 
@@ -999,12 +1177,12 @@ export default function CalcPage() {
                                 {/* Total Price Section */}
                                 <div className="mt-4 pt-4 border-t-2 border-slate-800">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="text-xl font-bold text-slate-700">積算価格 合計</h3>
+                                        <h3 className="text-xl font-bold text-slate-700">{TRANSLATIONS[lang].sections.total}</h3>
                                         <div className="text-5xl font-serif font-bold text-indigo-900 subpixel-antialiased">
                                             {formatCurrency(results.total)}
                                         </div>
                                     </div>
-                                    <p className="text-right text-xs text-slate-400 mt-2">※本試算結果は概算であり、実際の評価額を保証するものではありません。</p>
+                                    <p className="text-right text-xs text-slate-400 mt-2">{TRANSLATIONS[lang].sections.disclaimer}</p>
                                 </div>
 
                                 {/* Footer Logo/Brand */}

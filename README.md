@@ -24,6 +24,7 @@ To use the document analysis features, you must configure Google Cloud Vertex AI
    # .env.local
    GOOGLE_CLOUD_PROJECT=your-project-id-here
    GOOGLE_CLOUD_LOCATION=us-central1
+   GEMINI_MODEL=gemini-2.0-flash-exp
    NODE_ENV=development
    ```
 
