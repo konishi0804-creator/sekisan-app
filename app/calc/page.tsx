@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 
+import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
 import DocumentPreview from "../../components/DocumentPreview";
+import { useFileContext } from "../../context/FileContext";
 
 
 type StructureType = "木造" | "軽量鉄骨造" | "重量鉄骨造" | "RC造・SRC造";
@@ -271,6 +273,7 @@ export default function CalcPage() {
 
     const [coordinates, setCoordinates] = useState<ExtractedCoordinates>(null);
 
+    const { files: contextFiles, setFiles: setContextFiles } = useFileContext();
 
 
     // User ID for rate limiting
@@ -281,6 +284,15 @@ export default function CalcPage() {
             localStorage.setItem("sekisan_user_id", id);
         }
     }, []);
+
+    // Handle files passed from Home page via Context
+    useEffect(() => {
+        if (contextFiles.length > 0) {
+            handleFileUpload(contextFiles);
+
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contextFiles]);
 
     // Auto-fill logic based on structure change
     useEffect(() => {
@@ -632,6 +644,18 @@ export default function CalcPage() {
         <main className="min-h-screen bg-[#f3f4f6] pb-20 font-sans print:bg-white print:pb-0">
             <div className="max-w-6xl mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none">
 
+                {/* Back to Home - Hide on Print */}
+                <div className="mb-6 print:hidden">
+                    <Link href="/" className="group inline-flex items-center px-5 py-2.5 text-sm font-bold text-slate-600 bg-white rounded-full shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-200 hover:text-blue-600 hover:-translate-y-0.5 transition-all duration-300">
+                        <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center mr-2 group-hover:bg-blue-100 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600 transition-colors">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                        </span>
+                        HOMEに戻る
+                    </Link>
+                </div>
+
                 {/* Header - Hide on Print */}
                 <div className="mb-8 text-center print:hidden">
                     <h1 className="text-2xl md:text-3xl font-bold text-slate-700 tracking-tight">
@@ -642,10 +666,17 @@ export default function CalcPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start print:hidden">
+                {/* Dynamic Layout Container */}
+                <div className={`
+                    gap-6 items-start print:hidden transition-all duration-300
+                    ${previewUrls.length > 0 ? "grid grid-cols-1 lg:grid-cols-12" : "max-w-xl mx-auto"}
+                `}>
 
-                    {/* LEFT COLUMN: INPUT FORMS (Span 5) */}
-                    <div className="lg:col-span-5 space-y-6 order-2 lg:order-2">
+                    {/* INPUT FORMS (Span 5 when previewing, Full width when centered) */}
+                    <div className={`
+                        space-y-6
+                        ${previewUrls.length > 0 ? "lg:col-span-5 order-2 lg:order-2" : "w-full"}
+                    `}>
 
                         {/* Address Candidates Section */}
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
@@ -1010,16 +1041,17 @@ export default function CalcPage() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: DOCUMENT PREVIEW & RESULTS (Span 7) */}
-                    <div className="lg:col-span-7 space-y-6 order-1 lg:order-1 lg:sticky lg:top-8 h-fit">
-                        {/* Document Upload Section */}
-                        <FileUploader onFileSelect={handleFileUpload} isLoading={isAnalyzing} />
+                    {/* RIGHT COLUMN: DOCUMENT PREVIEW & RESULTS (Show only if files exist) */}
+                    {previewUrls.length > 0 && (
+                        <div className="lg:col-span-7 space-y-6 order-1 lg:order-1 lg:sticky lg:top-8 h-fit">
 
-                        <DocumentPreview
-                            fileUrls={previewUrls}
-                            coordinates={coordinates}
-                        />
-                    </div>
+
+                            <DocumentPreview
+                                fileUrls={previewUrls}
+                                coordinates={coordinates}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Result Summary Card (Small Preview) */}
