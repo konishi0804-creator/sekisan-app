@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 
 import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
@@ -301,6 +301,29 @@ export default function CalcPage() {
         setUsefulLife(data.usefulLife);
     }, [structure]);
 
+    // Dynamic Title for Print Filename
+    useEffect(() => {
+        const base = "EstiRE_sekisan_";
+        let suffix = "";
+
+        if (targetPropertyName && targetPropertyName.trim() !== "") {
+            suffix = targetPropertyName.trim();
+        } else if (selectedAddress && selectedAddress.trim() !== "") {
+            suffix = selectedAddress.trim();
+        }
+
+        if (suffix) {
+            document.title = `${base}${suffix}`;
+        } else {
+            document.title = "EstiRE";
+        }
+
+        // Cleanup on unmount
+        return () => {
+            document.title = "EstiRE";
+        };
+    }, [targetPropertyName, selectedAddress]);
+
     const handleFileUpload = async (files: File[]) => {
         setIsAnalyzing(true);
         setError(null);
@@ -587,56 +610,27 @@ export default function CalcPage() {
         if (!element) return;
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: "#ffffff",
-            } as any);
+            const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: "#ffffff" });
 
-            if (navigator.share && navigator.canShare) {
-                canvas.toBlob(async (blob) => {
-                    if (!blob) return;
-                    const file = new File([blob], "sekisan_result.png", { type: "image/png" });
-                    const shareData = {
-                        files: [file],
-                        title: '積算価格シミュレーション結果',
-                    };
-                    if (navigator.canShare(shareData)) {
-                        try {
-                            await navigator.share(shareData);
-                            return;
-                        } catch (err) {
-                            console.log("Share failed, falling back to clipboard", err);
-                        }
-                    } else {
-                        // Fallback if files sharing not supported but share is
-                        const link = document.createElement('a');
-                        link.download = 'sekisan_result.png';
-                        link.href = canvas.toDataURL();
-                        link.click();
-                    }
-                });
-            } else {
-                // PC / Clipboard Fallback
-                canvas.toBlob(async (blob) => {
-                    if (!blob) return;
-                    try {
-                        await navigator.clipboard.write([
-                            new ClipboardItem({ "image/png": blob })
-                        ]);
-                        alert("画像をクリップボードにコピーしました！");
-                    } catch (err) {
-                        const link = document.createElement('a');
-                        link.download = 'sekisan_result.png';
-                        link.href = canvas.toDataURL();
-                        link.click();
-                    }
-                });
+            // Construct Filename
+            const base = "EstiRE_sekisan_";
+            let suffix = "";
+            if (targetPropertyName && targetPropertyName.trim() !== "") {
+                suffix = targetPropertyName.trim();
+            } else if (selectedAddress && selectedAddress.trim() !== "") {
+                suffix = selectedAddress.trim();
             }
+            const filename = suffix ? `${base}${suffix}.png` : "EstiRE.png";
+
+            // Trigger Download
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            link.click();
 
         } catch (err) {
             console.error("Screenshot failed", err);
-            alert("画像の保存に失敗しました");
+            alert("画像を保存できませんでした");
         }
     };
 
@@ -1105,7 +1099,7 @@ export default function CalcPage() {
                             {/* Decorative Top Border */}
                             <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
 
-                            <div className="p-8 md:p-12 flex flex-col h-full bg-[url('https://www.transparenttextures.com/patterns/subtle-paper.png')] print:p-0 print:bg-none">
+                            <div className="p-8 md:p-12 flex flex-col h-full bg-gradient-to-br from-white to-slate-50 print:p-0 print:bg-none">
 
                                 {/* Header */}
                                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
@@ -1186,7 +1180,7 @@ export default function CalcPage() {
 
                                         <div className="flex justify-between items-baseline mb-2">
                                             <div className="text-sm text-slate-500 w-full">
-                                                <p className="leading-relaxed">
+                                                <div className="leading-relaxed">
                                                     {TRANSLATIONS[lang].formula.building(
                                                         formatCurrency(results.snapshot.unitPrice),
                                                         results.snapshot.floorArea.toLocaleString(),
@@ -1194,7 +1188,7 @@ export default function CalcPage() {
                                                         results.snapshot.age,
                                                         formatCurrency(results.buildingPrice)
                                                     )}
-                                                </p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex justify-end mt-2">
