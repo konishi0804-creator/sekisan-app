@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { toPng } from "html-to-image";
+import html2canvas from "html2canvas";
 
 import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
@@ -610,7 +610,13 @@ export default function CalcPage() {
         if (!element) return;
 
         try {
-            const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: "#ffffff" });
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true,
+                logging: false,
+            } as any);
+            const dataUrl = canvas.toDataURL("image/png");
 
             // Construct Filename
             const base = "EstiRE_sekisan_";
