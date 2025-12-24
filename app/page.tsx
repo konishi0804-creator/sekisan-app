@@ -76,7 +76,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={handleClearFile}
-                  className="px-3 py-1.5 text-sm font-bold text-emerald-600 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                  className="cursor-pointer px-3 py-1.5 text-sm font-bold text-emerald-600 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                 >
                   変更
                 </button>
@@ -101,7 +101,7 @@ export default function Home() {
                 key={tool.id}
                 onClick={() => handleToolClick(tool.path)}
                 disabled={tool.disabled}
-                className={`w-full group relative flex items-center p-4 rounded-xl shadow-md transition-all duration-200 active:scale-[0.99] border border-transparent ${tool.bgColor} ${tool.hoverColor} text-white text-left`}
+                className={`cursor-pointer w-full group relative flex items-center p-4 rounded-xl shadow-md transition-all duration-200 active:scale-[0.99] border border-transparent ${tool.bgColor} ${tool.hoverColor} text-white text-left`}
               >
                 <div className="p-3 bg-white/10 rounded-lg mr-4 group-hover:bg-white/20 transition-colors">
                   {tool.icon}

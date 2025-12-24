@@ -610,6 +610,14 @@ export default function CalcPage() {
         if (!element) return;
 
         try {
+            // Wait for fonts to load
+            if (document.fonts) {
+                await document.fonts.ready;
+            }
+
+            // Small delay to ensure rendering stability
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // fontEmbedCSS: "" prevents html-to-image from fetching external fonts and using eval/new Function
             // which avoids the Content Security Policy (CSP) error.
             // Fix: Explicitly set dimensions and reset styles to prevent offsets caused by margins/transforms
@@ -625,6 +633,13 @@ export default function CalcPage() {
                     animation: "none",
                     transition: "none",
                 },
+                filter: (node) => {
+                    // Exclude any interactive elements that might have been injected by extensions
+                    const el = node as HTMLElement;
+                    if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') return false;
+                    // Keep useful content only. (Though our result-card has no buttons/inputs, this is safe)
+                    return true;
+                }
             });
 
             // Construct Filename
@@ -645,7 +660,8 @@ export default function CalcPage() {
 
         } catch (err) {
             console.error("Screenshot failed", err);
-            alert("画像を保存できませんでした");
+            const msg = err instanceof Error ? err.message : String(err);
+            alert(`画像を保存できませんでした。\nエラー: ${msg}`);
         }
     };
 
@@ -746,7 +762,7 @@ export default function CalcPage() {
                                         />
                                         <button
                                             onClick={() => handleOpenMap("copy")}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+                                            className="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
                                             title="住所をコピー"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -770,7 +786,7 @@ export default function CalcPage() {
                                     <div className="mt-3">
                                         <button
                                             onClick={() => handleOpenMap("chikamap")}
-                                            className="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold text-sm rounded-lg shadow hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                            className="cursor-pointer w-full px-4 py-2.5 bg-emerald-600 text-white font-bold text-sm rounded-lg shadow hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                                             disabled={!selectedAddress}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 group-hover:animate-bounce">
@@ -793,19 +809,19 @@ export default function CalcPage() {
                                 <div className="flex bg-slate-100 p-0.5 rounded-lg scale-90 origin-right">
                                     <button
                                         onClick={() => setLandValuationMethod("auto")}
-                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "auto" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                                        className={`cursor-pointer px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "auto" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                                     >
                                         自動
                                     </button>
                                     <button
                                         onClick={() => setLandValuationMethod("road")}
-                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "road" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                                        className={`cursor-pointer px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "road" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                                     >
                                         路線価
                                     </button>
                                     <button
                                         onClick={() => setLandValuationMethod("multiplier")}
-                                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "multiplier" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
+                                        className={`cursor-pointer px-3 py-1 text-xs font-bold rounded-md transition-all ${landValuationMethod === "multiplier" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-slate-700"}`}
                                     >
                                         倍率
                                     </button>
@@ -832,13 +848,13 @@ export default function CalcPage() {
                                                 <div className="flex items-center bg-slate-100 rounded-md p-0.5 scale-90 origin-right">
                                                     <button
                                                         onClick={() => setRoadPriceUnit("yen")}
-                                                        className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "yen" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
+                                                        className={`cursor-pointer px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "yen" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
                                                     >
                                                         円/㎡
                                                     </button>
                                                     <button
                                                         onClick={() => setRoadPriceUnit("thousand")}
-                                                        className={`px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "thousand" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
+                                                        className={`cursor-pointer px-2 py-0.5 text-xs font-bold rounded-sm ${roadPriceUnit === "thousand" ? "bg-white shadow text-slate-800" : "text-slate-500"}`}
                                                     >
                                                         千円/㎡
                                                     </button>
@@ -1048,7 +1064,7 @@ export default function CalcPage() {
                         <div className="py-2">
                             <button
                                 onClick={handleCalculate}
-                                className="w-full block mx-auto py-3 px-8 bg-slate-700 text-white font-bold text-base rounded-xl shadow-lg hover:bg-slate-800 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
+                                className="cursor-pointer w-full block mx-auto py-3 px-8 bg-slate-700 text-white font-bold text-base rounded-xl shadow-lg hover:bg-slate-800 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
                             >
                                 積算価格を計算
                             </button>
@@ -1086,7 +1102,7 @@ export default function CalcPage() {
                             {/* Screenshot Button */}
                             <button
                                 onClick={handleScreenshot}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                                className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
                                 title="画像を保存/コピー"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -1098,7 +1114,7 @@ export default function CalcPage() {
                             {/* Print Button */}
                             <button
                                 onClick={handlePrint}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                                className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
                                 title="印刷"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
