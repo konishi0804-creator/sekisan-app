@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 
 import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
@@ -610,13 +610,13 @@ export default function CalcPage() {
         if (!element) return;
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
+            // fontEmbedCSS: "" prevents html-to-image from fetching external fonts and using eval/new Function
+            // which avoids the Content Security Policy (CSP) error.
+            const dataUrl = await toPng(element, {
+                cacheBust: true,
                 backgroundColor: "#ffffff",
-                useCORS: true,
-                logging: false,
-            } as any);
-            const dataUrl = canvas.toDataURL("image/png");
+                fontEmbedCSS: ""
+            });
 
             // Construct Filename
             const base = "EstiRE_sekisan_";
