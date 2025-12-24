@@ -2,10 +2,8 @@
 
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+// pdfjs-dist dynamic import used in convertPdfToImages to avoid SSR issues
 
-// Encode worker path - simple string replacement for now or assume it's set globally
-GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface FileUploaderProps {
     onFileSelect: (files: File[]) => void;
@@ -16,8 +14,12 @@ export default function FileUploader({ onFileSelect, isLoading }: FileUploaderPr
     const [isConverting, setIsConverting] = React.useState(false);
 
     const convertPdfToImages = async (file: File): Promise<File[]> => {
+        const pdfJS = await import('pdfjs-dist');
+        pdfJS.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await getDocument({
+
+        const pdf = await pdfJS.getDocument({
             data: arrayBuffer,
             cMapUrl: 'https://unpkg.com/pdfjs-dist@4.4.168/cmaps/',
             cMapPacked: true,
