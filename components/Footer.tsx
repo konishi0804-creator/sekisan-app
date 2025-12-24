@@ -44,6 +44,57 @@ export default function Footer() {
         document.body.style.overflow = "unset";
     };
 
+    const [formState, setFormState] = useState({
+        name: "",
+        email: "",
+        message: ""
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        // TODO: Replace with your actual Formspree Endpoint URL
+        // Example: "https://formspree.io/f/xyzyxyzy"
+        const FORMSPREE_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+
+        try {
+            const response = await fetch(FORMSPREE_ENDPOINT, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(formState),
+            });
+
+            if (response.ok) {
+                alert("お問い合わせを受け付けました。");
+                setFormState({ name: "", email: "", message: "" });
+                closeModal();
+            } else {
+                // If the user hasn't set the ID yet, it will fail, which is expected during setup.
+                // We'll show a helpful message if it looks like a 404 (ID not found).
+                if (response.status === 404) {
+                    alert("送信エラー: FormspreeのIDが設定されていません。\nコード内の 'YOUR_FORM_ID' を正しいIDに書き換えてください。");
+                } else {
+                    alert("送信に失敗しました。時間をおいて再度お試しください。");
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert("送信エラーが発生しました。");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <>
             <footer className="w-full bg-white border-t border-slate-200 mt-auto">
@@ -84,7 +135,7 @@ export default function Footer() {
                     onClick={closeModal}
                 >
                     <div
-                        className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                        className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between p-6 border-b border-slate-100">
@@ -102,16 +153,70 @@ export default function Footer() {
                         </div>
 
                         <div className="p-6 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slate-700">
-                            {MODAL_CONTENTS[activeModal].content}
+                            {activeModal === "contact" ? (
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label htmlFor="name" className="block text-sm font-bold text-slate-700 mb-1">お名前 <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="text"
+                                            id="name"
+                                            name="name"
+                                            required
+                                            value={formState.name}
+                                            onChange={handleInputChange}
+                                            className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="例：山田 太郎"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="email" className="block text-sm font-bold text-slate-700 mb-1">メールアドレス <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="email"
+                                            id="email"
+                                            name="email"
+                                            required
+                                            value={formState.email}
+                                            onChange={handleInputChange}
+                                            className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="例：taro@example.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="message" className="block text-sm font-bold text-slate-700 mb-1">お問い合わせ内容 <span className="text-red-500">*</span></label>
+                                        <textarea
+                                            id="message"
+                                            name="message"
+                                            required
+                                            rows={5}
+                                            value={formState.message}
+                                            onChange={handleInputChange}
+                                            className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                            placeholder="お問い合わせ内容を詳しくご記入ください。"
+                                        ></textarea>
+                                    </div>
+                                    <p className="text-xs text-slate-500">※これはデモです。実際には送信されません。</p>
+                                </form>
+                            ) : (
+                                MODAL_CONTENTS[activeModal].content
+                            )}
                         </div>
 
-                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                             <button
                                 onClick={closeModal}
-                                className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                className="px-6 py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
                             >
                                 閉じる
                             </button>
+                            {activeModal === "contact" && (
+                                <button
+                                    onClick={handleSubmit} // Trigger form submit logic
+                                    disabled={isSubmitting}
+                                    className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? "送信中..." : "送信する"}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

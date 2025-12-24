@@ -612,10 +612,19 @@ export default function CalcPage() {
         try {
             // fontEmbedCSS: "" prevents html-to-image from fetching external fonts and using eval/new Function
             // which avoids the Content Security Policy (CSP) error.
+            // Fix: Explicitly set dimensions and reset styles to prevent offsets caused by margins/transforms
             const dataUrl = await toPng(element, {
                 cacheBust: true,
                 backgroundColor: "#ffffff",
-                fontEmbedCSS: ""
+                fontEmbedCSS: "",
+                width: element.offsetWidth,
+                height: element.offsetHeight,
+                style: {
+                    transform: "none",
+                    margin: "0",
+                    animation: "none",
+                    transition: "none",
+                },
             });
 
             // Construct Filename
@@ -674,9 +683,24 @@ export default function CalcPage() {
 
                     {/* INPUT FORMS (Span 5 when previewing, Full width when centered) */}
                     <div className={`
-                        space-y-6
+                        space-y-6 relative
                         ${previewUrls.length > 0 ? "lg:col-span-5 order-2 lg:order-2" : "w-full"}
                     `}>
+                        {/* Loading Overlay */}
+                        {isAnalyzing && (
+                            <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center animate-in fade-in duration-300">
+                                <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
+                                        <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="font-bold text-slate-800 mb-1">AIが資料を解析しています...</p>
+                                        <p className="text-xs text-slate-500">しばらくお待ちください</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Address Candidates Section */}
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
@@ -1024,9 +1048,9 @@ export default function CalcPage() {
                         <div className="py-2">
                             <button
                                 onClick={handleCalculate}
-                                className="w-full block mx-auto py-3 px-8 bg-blue-600 text-white font-bold text-base rounded-xl shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
+                                className="w-full block mx-auto py-3 px-8 bg-slate-700 text-white font-bold text-base rounded-xl shadow-lg hover:bg-slate-800 hover:scale-105 active:scale-95 active:translate-y-px transition-all duration-150 ease-out"
                             >
-                                価格を計算する
+                                積算価格を計算
                             </button>
                             {error && (
                                 <p className="mt-4 text-red-600 font-bold text-center bg-red-50 p-3 rounded-lg border border-red-200 animate-in fade-in slide-in-from-top-2 text-sm">
@@ -1221,7 +1245,7 @@ export default function CalcPage() {
                                 <div className="mt-8 pt-4 text-center opacity-40">
                                     <div className="flex items-center justify-center gap-2 text-slate-400 font-serif italic">
                                         <span className="h-px w-8 bg-slate-300"></span>
-                                        <span>Sekisan App Simulation</span>
+                                        <span>EstiRE Sekisan</span>
                                         <span className="h-px w-8 bg-slate-300"></span>
                                     </div>
                                 </div>
