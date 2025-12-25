@@ -19,13 +19,13 @@ interface DocumentPreviewProps {
     } | null;
 }
 
-const LABELS: Record<string, { label: string; color: string; bg: string }> = {
-    landArea: { label: "土地面積", color: "border-yellow-500", bg: "bg-yellow-400/30" },
-    floorArea: { label: "延床面積", color: "border-yellow-500", bg: "bg-yellow-400/30" },
-    structure: { label: "構造", color: "border-yellow-500", bg: "bg-yellow-400/30" },
-    address: { label: "住所", color: "border-yellow-500", bg: "bg-yellow-400/30" },
-    roadPrice: { label: "路線価", color: "border-yellow-500", bg: "bg-yellow-400/30" },
-    age: { label: "築年数", color: "border-yellow-500", bg: "bg-yellow-400/30" },
+const LABELS: Record<string, { label: string }> = {
+    landArea: { label: "土地面積" },
+    floorArea: { label: "延床面積" },
+    structure: { label: "構造" },
+    address: { label: "住所" },
+    roadPrice: { label: "路線価" },
+    age: { label: "築年数" },
 };
 
 export default function DocumentPreview({ fileUrls, coordinates }: DocumentPreviewProps) {
@@ -89,31 +89,47 @@ export default function DocumentPreview({ fileUrls, coordinates }: DocumentPrevi
                                 className="max-w-full h-auto block"
                             />
 
-                            {/* Markers */}
-                            {coordinates && Object.entries(coordinates).map(([key, item]) => {
-                                if (!item || item.page !== pageNum) return null;
-                                const [ymin, xmin, ymax, xmax] = item.box;
-                                const conf = LABELS[key] || { label: key, color: "border-gray-500", bg: "bg-gray-500/20" };
+                            {/* SVG Overlay Markers */}
+                            <svg
+                                viewBox="0 0 1000 1000"
+                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                preserveAspectRatio="none"
+                            >
+                                {coordinates && Object.entries(coordinates).map(([key, item]) => {
+                                    if (!item || item.page !== pageNum) return null;
+                                    const [ymin, xmin, ymax, xmax] = item.box;
+                                    // Use highlighter colors (no border, transparent fill)
+                                    // Default to yellow highlighter style
+                                    const conf = LABELS[key] || { label: key, fill: "#facc15" }; // yellow-400
 
-                                return (
-                                    <div
-                                        key={key}
-                                        className={`absolute border-2 ${conf.color} ${conf.bg} group cursor-help`}
-                                        style={{
-                                            top: `${ymin / 10}%`,
-                                            left: `${xmin / 10}%`,
-                                            height: `${(ymax - ymin) / 10}%`,
-                                            width: `${(xmax - xmin) / 10}%`,
-                                        }}
-                                        title={conf.label}
-                                    >
-                                        {/* Tooltip only on hover, no permanent text clutter */}
-                                        <span className="absolute -top-6 left-0 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                                            {conf.label}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                                    // Map custom style if needed, otherwise use default
+                                    const fill = '#facc15'; // default yellow
+
+                                    // Confirmed Visual Offset Correction
+                                    // The API coordinates seem consistently shifted up.
+                                    // Analysis shows ~1.2% upward shift needs correction.
+                                    const Y_OFFSET = 12; // Shifts down by 1.2%
+                                    const H_PADDING = 5; // Expands height slightly
+
+                                    return (
+                                        <g key={key} className="group pointer-events-auto cursor-help">
+                                            <rect
+                                                x={xmin}
+                                                y={ymin + Y_OFFSET}
+                                                width={xmax - xmin}
+                                                height={(ymax - ymin) + H_PADDING}
+                                                fill={fill}
+                                                fillOpacity="0.5"
+                                            />
+                                            {/* Tooltip via foreignObject or simplified absolute div outside if needed.
+                                                Using title for simple native tooltip, or we can keep the custom one separately if strict SVG.
+                                                For simplicity and robustness, using a title element here.
+                                             */}
+                                            <title>{conf.label}</title>
+                                        </g>
+                                    );
+                                })}
+                            </svg>
                         </div>
                     );
                 })}
