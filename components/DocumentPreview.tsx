@@ -68,7 +68,7 @@ export default function DocumentPreview({ fileUrls, coordinates }: DocumentPrevi
                 <h3 className="font-bold text-slate-700 text-sm">解析プレビュー</h3>
             </div>
 
-            <div className="relative w-full max-h-[600px] overflow-y-auto bg-slate-100 p-4 space-y-4 text-center">
+            <div className="relative w-full h-[calc(100vh-8rem)] overflow-y-auto bg-slate-100 p-4 space-y-4 text-center">
 
                 {pagesToRender.map((pageNum) => {
                     const url = fileUrls[pageNum - 1]; // 1-based page num to 0-based index

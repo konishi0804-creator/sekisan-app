@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { toPng } from "html-to-image";
+
 
 import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
@@ -605,69 +605,12 @@ export default function CalcPage() {
         window.print();
     };
 
-    const handleScreenshot = async () => {
-        const element = document.getElementById("result-card");
-        if (!element) return;
 
-        try {
-            // Wait for fonts to load
-            if (document.fonts) {
-                await document.fonts.ready;
-            }
-
-            // Small delay to ensure rendering stability
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // fontEmbedCSS: "" prevents html-to-image from fetching external fonts and using eval/new Function
-            // which avoids the Content Security Policy (CSP) error.
-            // Fix: Explicitly set dimensions and reset styles to prevent offsets caused by margins/transforms
-            const dataUrl = await toPng(element, {
-                cacheBust: true,
-                backgroundColor: "#ffffff",
-                fontEmbedCSS: "",
-                width: element.offsetWidth,
-                height: element.offsetHeight,
-                style: {
-                    transform: "none",
-                    margin: "0",
-                    animation: "none",
-                    transition: "none",
-                },
-                filter: (node) => {
-                    // Exclude any interactive elements that might have been injected by extensions
-                    const el = node as HTMLElement;
-                    if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') return false;
-                    // Keep useful content only. (Though our result-card has no buttons/inputs, this is safe)
-                    return true;
-                }
-            });
-
-            // Construct Filename
-            const base = "EstiRE_sekisan_";
-            let suffix = "";
-            if (targetPropertyName && targetPropertyName.trim() !== "") {
-                suffix = targetPropertyName.trim();
-            } else if (selectedAddress && selectedAddress.trim() !== "") {
-                suffix = selectedAddress.trim();
-            }
-            const filename = suffix ? `${base}${suffix}.png` : "EstiRE.png";
-
-            // Trigger Download
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = dataUrl;
-            link.click();
-
-        } catch (err) {
-            console.error("Screenshot failed", err);
-            const msg = err instanceof Error ? err.message : String(err);
-            alert(`画像を保存できませんでした。\nエラー: ${msg}`);
-        }
-    };
 
     return (
         <main className="min-h-screen bg-[#f3f4f6] pb-20 font-sans print:bg-white print:pb-0">
-            <div className="max-w-6xl mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none">
+            <div className={`mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none print:scale-[0.85] print:origin-top transition-all duration-300 ${previewUrls.length > 0 ? "max-w-[1920px] px-6" : "max-w-6xl"
+                }`}>
 
                 {/* Back to Home - Hide on Print */}
                 <div className="mb-6 print:hidden">
@@ -1099,21 +1042,12 @@ export default function CalcPage() {
                     <div className="space-y-4">
                         {/* Controls Toolbar */}
                         <div className="flex justify-end items-center gap-2 print:hidden">
-                            {/* Screenshot Button */}
-                            <button
-                                onClick={handleScreenshot}
-                                className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
-                                title="画像を保存/コピー"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-                                </svg>
-                                保存・コピー
-                            </button>
-
                             {/* Print Button */}
                             <button
-                                onClick={handlePrint}
+                                onClick={() => {
+                                    alert("【有料プラン限定機能】\n印刷機能は有料プランでの提供を予定しています。\n現在はテスト版として、透かし入りの状態でご利用いただけます。");
+                                    handlePrint();
+                                }}
                                 className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
                                 title="印刷"
                             >
@@ -1142,6 +1076,14 @@ export default function CalcPage() {
                             id="result-card"
                             className="relative bg-white text-slate-800 shadow-2xl print:shadow-none overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 mx-auto max-w-[800px] print:max-w-none print:w-full"
                         >
+                            {/* Watermark for Free Plan */}
+                            <div className="hidden print:flex absolute inset-0 z-0 items-center justify-center pointer-events-none opacity-[0.08] select-none overflow-hidden">
+                                <div className="transform -rotate-45 text-slate-900 font-black text-[120px] whitespace-nowrap leading-none tracking-widest border-4 border-slate-900 p-12 rounded-3xl">
+                                    SAMPLE
+                                    <div className="text-[40px] text-center mt-4 tracking-normal font-bold">EstiRE Free Plan</div>
+                                </div>
+                            </div>
+
                             {/* Decorative Top Border */}
                             <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
 
