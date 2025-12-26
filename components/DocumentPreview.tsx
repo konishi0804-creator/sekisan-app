@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 type CoordinateItem = {
     box: [number, number, number, number]; // [ymin, xmin, ymax, xmax] 0-1000 scale
@@ -17,6 +17,7 @@ interface DocumentPreviewProps {
         age?: CoordinateItem | null;
         floorArea?: CoordinateItem | null;
     } | null;
+    activeField?: string | null;
 }
 
 const LABELS: Record<string, { label: string }> = {
@@ -28,54 +29,69 @@ const LABELS: Record<string, { label: string }> = {
     age: { label: "築年数" },
 };
 
-export default function DocumentPreview({ fileUrls, coordinates }: DocumentPreviewProps) {
+export default function DocumentPreview({ fileUrls, coordinates, activeField }: DocumentPreviewProps) {
+    const [pagesToRender, setPagesToRender] = useState<number[]>([1]);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const DEBUG_MODE = process.env.NEXT_PUBLIC_DEBUG_PDF_HIGHLIGHT === 'true';
+
     if (!fileUrls || fileUrls.length === 0) return null;
 
-    const [pagesToRender, setPagesToRender] = useState<number[]>([1]); // Default to page 1
-
-    // Determine relevant pages based on coordinates
+    // Reset
     useEffect(() => {
-        if (!coordinates) {
-            setPagesToRender([1]);
-            return;
-        }
+        setPagesToRender([1]);
+    }, [fileUrls.length]);
 
+    // Determine pages to show
+    useEffect(() => {
+        if (!coordinates) return;
         const pages = new Set<number>();
-        let hasCoords = false;
-
+        pages.add(1);
         Object.values(coordinates).forEach((item) => {
-            if (item && item.page) {
-                // Ensure page is within bounds of uploaded files
-                // Note: fileUrls is 0-indexed, page is 1-based.
-                if (item.page <= fileUrls.length) {
-                    pages.add(item.page);
-                }
-                hasCoords = true;
-            }
+            if (item && item.page && item.page <= fileUrls.length) pages.add(item.page);
         });
-
-        if (hasCoords && pages.size > 0) {
-            setPagesToRender(Array.from(pages).sort((a, b) => a - b));
-        } else {
-            setPagesToRender([1]); // Fallback
-        }
+        if (pages.size > 0) setPagesToRender(Array.from(pages).sort((a, b) => a - b));
     }, [coordinates, fileUrls.length]);
 
 
+    // Scroll
+    useEffect(() => {
+        if (!activeField || !coordinates || !coordinates[activeField as keyof typeof coordinates]) return;
+        const item = coordinates[activeField as keyof typeof coordinates];
+        if (!item || !item.page) return;
+        if (containerRef.current) {
+            const targetEl = pageRefs.current[item.page];
+            if (targetEl) {
+                const relativeY = item.box[0] / 1000;
+                const pixelY = targetEl.offsetTop + (targetEl.offsetHeight * relativeY);
+                containerRef.current.scrollTo({ top: Math.max(0, pixelY - 100), behavior: 'smooth' });
+            }
+        }
+    }, [activeField, coordinates, pagesToRender]);
+
     return (
-        <div className="w-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+        <div className="w-full bg-slate-50 rounded-xl border border-slate-200 overflow-hidden relative">
+
             <div className="p-3 border-b border-slate-200 bg-white flex justify-between items-center flex-wrap gap-2">
-                <h3 className="font-bold text-slate-700 text-sm">解析プレビュー</h3>
+                <h3 className="font-bold text-slate-700 text-sm">解析プレビュー (Normalized 1000x1000)</h3>
             </div>
 
-            <div className="relative w-full h-[calc(100vh-8rem)] overflow-y-auto bg-slate-100 p-4 space-y-4 text-center">
-
+            <div
+                ref={containerRef}
+                className="relative w-full h-[calc(100vh-8rem)] overflow-y-auto bg-slate-100 p-4 space-y-4 text-center"
+            >
                 {pagesToRender.map((pageNum) => {
-                    const url = fileUrls[pageNum - 1]; // 1-based page num to 0-based index
+                    const url = fileUrls[pageNum - 1];
                     if (!url) return null;
 
                     return (
-                        <div key={pageNum} className="relative inline-block shadow-lg max-w-full text-[0px] leading-none">
+                        <div
+                            key={pageNum}
+                            className="relative inline-block shadow-lg max-w-full text-[0px] leading-none"
+                            ref={(el) => { if (el) pageRefs.current[pageNum] = el; }}
+                        >
+                            {/* Page Indicator */}
                             {fileUrls.length > 1 && (
                                 <div className="absolute top-0 left-0 bg-slate-800/70 text-white text-xs px-2 py-1 rounded-br z-10">
                                     Page {pageNum}
@@ -87,48 +103,38 @@ export default function DocumentPreview({ fileUrls, coordinates }: DocumentPrevi
                                 src={url}
                                 alt={`Page ${pageNum}`}
                                 className="max-w-full h-auto block"
+                            // Image is already processed to 1000x1000 square by imageProcessor
                             />
 
-                            {/* SVG Overlay Markers */}
+                            {/* SVG Overlay - Unified 1000x1000 Coordination */}
                             <svg
                                 viewBox="0 0 1000 1000"
                                 className="absolute inset-0 w-full h-full pointer-events-none"
                                 preserveAspectRatio="none"
                             >
-                                {coordinates && Object.entries(coordinates).map(([key, item]) => {
+                                {coordinates && activeField && (() => {
+                                    const item = coordinates[activeField as keyof typeof coordinates];
                                     if (!item || item.page !== pageNum) return null;
+
                                     const [ymin, xmin, ymax, xmax] = item.box;
-                                    // Use highlighter colors (no border, transparent fill)
-                                    // Default to yellow highlighter style
-                                    const conf = LABELS[key] || { label: key, fill: "#facc15" }; // yellow-400
-
-                                    // Map custom style if needed, otherwise use default
-                                    const fill = '#facc15'; // default yellow
-
-                                    // Confirmed Visual Offset Correction
-                                    // The API coordinates seem consistently shifted up.
-                                    // Analysis shows ~1.2% upward shift needs correction.
-                                    const Y_OFFSET = 12; // Shifts down by 1.2%
-                                    const H_PADDING = 5; // Expands height slightly
 
                                     return (
-                                        <g key={key} className="group pointer-events-auto cursor-help">
+                                        <g>
                                             <rect
                                                 x={xmin}
-                                                y={ymin + Y_OFFSET}
+                                                y={ymin}
                                                 width={xmax - xmin}
-                                                height={(ymax - ymin) + H_PADDING}
-                                                fill={fill}
-                                                fillOpacity="0.5"
+                                                height={ymax - ymin}
+                                                fill="#ef4444"
+                                                fillOpacity="0.2"
+                                                stroke="#ef4444"
+                                                strokeWidth="3"
+                                                className="animate-pulse"
                                             />
-                                            {/* Tooltip via foreignObject or simplified absolute div outside if needed.
-                                                Using title for simple native tooltip, or we can keep the custom one separately if strict SVG.
-                                                For simplicity and robustness, using a title element here.
-                                             */}
-                                            <title>{conf.label}</title>
+
                                         </g>
                                     );
-                                })}
+                                })()}
                             </svg>
                         </div>
                     );

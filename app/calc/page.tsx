@@ -7,6 +7,7 @@ import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
 import DocumentPreview from "../../components/DocumentPreview";
 import { useFileContext } from "../../context/FileContext";
+import { processFileToImage } from "../../utils/imageProcessor";
 
 
 type StructureType = "木造" | "軽量鉄骨造" | "重量鉄骨造" | "RC造・SRC造";
@@ -258,8 +259,9 @@ export default function CalcPage() {
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [fileType, setFileType] = useState<string>("");
 
+    // Coordinate Types
     type CoordinateItem = {
-        box: [number, number, number, number];
+        box: [number, number, number, number]; // [ymin, xmin, ymax, xmax]
         page: number;
     };
     type ExtractedCoordinates = {
@@ -272,6 +274,8 @@ export default function CalcPage() {
     } | null;
 
     const [coordinates, setCoordinates] = useState<ExtractedCoordinates>(null);
+    const [activeField, setActiveField] = useState<string | null>(null);
+
 
     const { files: contextFiles, setFiles: setContextFiles } = useFileContext();
 
@@ -330,15 +334,19 @@ export default function CalcPage() {
         setAddressCandidates([]); // Reset candidates
         setSelectedAddress("");   // Reset selection
         setCoordinates(null);
+        setActiveField(null);
 
         // Preview Setup
         if (files.length > 0) {
             // Revoke old URLs
             previewUrls.forEach(url => URL.revokeObjectURL(url));
 
-            const urls = files.map(file => URL.createObjectURL(file));
-            setPreviewUrls(urls);
-            setFileType(files[0].type);
+            // Wait until processing is done to set preview URLs
+            // This prevents showing raw PDF or un-normalized images
+
+            // const urls = files.map(file => URL.createObjectURL(file));
+            // setPreviewUrls(urls);
+            // setFileType(files[0].type);
         }
 
         try {
@@ -374,7 +382,39 @@ export default function CalcPage() {
                 }
             }
 
-            files.forEach((file) => {
+
+
+            // Client-side Validation
+            if (files.length === 0) return;
+
+            // ... (keep validation logic roughly same, but we will process primarily the first file for analysis)
+            // Note: The current app seems to analyze single file for coordinates? 
+            // The prompt says "Analyze this document". 
+            // If multiple files (images) are uploaded, loop?
+            // For now, let's process ALL files.
+
+            const processedFiles: File[] = [];
+            for (const file of files) {
+                try {
+                    const processed = await processFileToImage(file);
+                    processedFiles.push(processed);
+                } catch (err) {
+                    console.error("Processing failed for", file.name, err);
+                    processedFiles.push(file); // Fallback
+                }
+            }
+
+            // Update previews to match EXACTLY what is being sent
+            // Revoke old URLs
+            previewUrls.forEach(url => URL.revokeObjectURL(url));
+            const newUrls = processedFiles.map(file => URL.createObjectURL(file));
+            setPreviewUrls(newUrls);
+
+            // Re-assign fileType based on processed
+            setFileType(processedFiles[0].type);
+
+
+            processedFiles.forEach((file) => {
                 formData.append("files", file);
             });
 
@@ -432,6 +472,8 @@ export default function CalcPage() {
             if (data.coordinates) {
                 setCoordinates(data.coordinates);
             }
+
+
 
             // Clear invalid fields if they are now filled
             setInvalidFields([]);
@@ -601,15 +643,18 @@ export default function CalcPage() {
         return val.toLocaleString("ja-JP", { style: "currency", currency: "JPY" });
     };
 
-    const handlePrint = () => {
+    const handleDownloadPDF = async () => {
+        if (!window.confirm("PDF保存は有料サービスです。\n現在はサンプルとして無償でご利用いただけます。\n\n※印刷画面が開きますので、「送信先」または「プリンター」で「PDFに保存」を選択してください。")) {
+            return;
+        }
+
         window.print();
     };
 
 
-
     return (
         <main className="min-h-screen bg-[#f3f4f6] pb-20 font-sans print:bg-white print:pb-0">
-            <div className={`mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none print:scale-[0.85] print:origin-top transition-all duration-300 ${previewUrls.length > 0 ? "max-w-[1920px] px-6" : "max-w-6xl"
+            <div className={`mx-auto px-4 py-8 print:p-0 print:m-0 print:max-w-none print:scale-[0.85] print:origin-top transition-all duration-300 ${previewUrls.length > 0 ? "max-w-[1500px] px-6" : "max-w-6xl"
                 }`}>
 
                 {/* Back to Home - Hide on Print */}
@@ -700,6 +745,7 @@ export default function CalcPage() {
                                             type="text"
                                             value={selectedAddress}
                                             onChange={(e) => setSelectedAddress(e.target.value)}
+                                            onFocus={() => setActiveField("address")}
                                             placeholder="例：東京都千代田区千代田1-1"
                                             className="w-full p-3 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                                         />
@@ -813,6 +859,7 @@ export default function CalcPage() {
                                                             setInvalidFields(prev => prev.filter(f => f !== "roadPrice"));
                                                         }
                                                     }}
+                                                    onFocus={() => setActiveField("roadPrice")}
                                                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("roadPrice")
                                                         ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                         : "bg-slate-50 border-slate-300"
@@ -837,6 +884,7 @@ export default function CalcPage() {
                                                         setInvalidFields(prev => prev.filter(f => f !== "landArea"));
                                                     }
                                                 }}
+                                                onFocus={() => setActiveField("landArea")}
                                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("landArea")
                                                     ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                     : "bg-slate-50 border-slate-300"
@@ -922,6 +970,7 @@ export default function CalcPage() {
                                         <select
                                             value={structure}
                                             onChange={(e) => setStructure(e.target.value as StructureType)}
+                                            onFocus={() => setActiveField("structure")}
                                             className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none text-sm"
                                         >
                                             {Object.keys(STRUCTURES).map((s) => (
@@ -960,6 +1009,7 @@ export default function CalcPage() {
                                                     setInvalidFields(prev => prev.filter(f => f !== "age"));
                                                 }
                                             }}
+                                            onFocus={() => setActiveField("age")}
                                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("age")
                                                 ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                 : "bg-slate-50 border-slate-300"
@@ -993,6 +1043,7 @@ export default function CalcPage() {
                                                     setInvalidFields(prev => prev.filter(f => f !== "floorArea"));
                                                 }
                                             }}
+                                            onFocus={() => setActiveField("floorArea")}
                                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("floorArea")
                                                 ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
                                                 : "bg-slate-50 border-slate-300"
@@ -1028,10 +1079,10 @@ export default function CalcPage() {
                     {previewUrls.length > 0 && (
                         <div className="lg:col-span-7 space-y-6 order-1 lg:order-1 lg:sticky lg:top-8 h-fit">
 
-
                             <DocumentPreview
                                 fileUrls={previewUrls}
                                 coordinates={coordinates}
+                                activeField={activeField}
                             />
                         </div>
                     )}
@@ -1044,17 +1095,14 @@ export default function CalcPage() {
                         <div className="flex justify-end items-center gap-2 print:hidden">
                             {/* Print Button */}
                             <button
-                                onClick={() => {
-                                    alert("【有料プラン限定機能】\n印刷機能は有料プランでの提供を予定しています。\n現在はテスト版として、透かし入りの状態でご利用いただけます。");
-                                    handlePrint();
-                                }}
+                                onClick={handleDownloadPDF}
                                 className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
-                                title="印刷"
+                                title="PDFダウンロード"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008h-.008V10.5Zm-3 0h.008v.008h-.008V10.5Z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                 </svg>
-                                印刷
+                                PDF保存
                             </button>
 
                             {/* Separator */}

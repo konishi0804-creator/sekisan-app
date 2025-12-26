@@ -2,10 +2,12 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createWorker } from "tesseract.js";
+import { Jimp } from "jimp";
 
 // --- Configuration ---
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.0-flash"; // Default to a stable model
+const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.0-flash-exp"; // Upgrade to 2.0 Flash Exp for SOTA Vision
 
 export async function POST(req: NextRequest) {
     // 1. Validate Config
@@ -126,10 +128,15 @@ export async function POST(req: NextRequest) {
               - Example: "昭和60年" -> 1985 -> Age = ${new Date().getFullYear()} - 1985 = ${new Date().getFullYear() - 1985}.
 
             Coordinates Instructions:
-            - For "coordinates" field, provide an object { "box": [ymin, xmin, ymax, xmax], "page": number }.
-            - "box": bounding box [ymin, xmin, ymax, xmax] normalized to 1000 scale (0-1000).
-            - "page": The 1-based page number where this text was found (e.g., 1 for the first page).
-            - If value not found or page is not image, set to null.
+            - CRITICAL: "box" must [ymin, xmin, ymax, xmax] normalized to 1000 scale (0-1000).
+            - "page": The 1-based page number where this text was found.
+            - "landArea": The box must enclose the NUMERIC VALUE (e.g. "145.87") of the land area. DO NOT circle the label "Land Area" or "地積".
+            - "floorArea": The box must enclose the NUMERIC VALUE (e.g. "98.5") of the total floor area.
+            - "structure": The box must enclose the structure text (e.g. "鉄筋コンクリート...").
+            - "address": The box must enclose the address text.
+            - "roadPrice": The box must enclose the value of the road price/rosenka.
+            - PRECISION MATTERS. Do not include surrounding borders or labels in the box, ONLY the value text itself.
+            - Double check that you rely on VISUAL LOCATION. Do not mix up Land section and Building section.
             `
         });
 
@@ -145,11 +152,9 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // 5. Generate Content with Retry (Custom Logic for 503)
-        // Vertex SDK handles some retries, but we want custom control or just rely on SDK defaults.
-        // SDK default is good for 503. We need to catch 429 explicitly.
-
+        // 5. Generate Content
         try {
+            console.log("[Gemini] Generating content...");
             const result = await model.generateContent({
                 contents: [{ role: "user", parts: parts as any }]
             });
@@ -171,6 +176,124 @@ export async function POST(req: NextRequest) {
 
             const jsonStr = text.substring(start, end + 1);
             const data = JSON.parse(jsonStr);
+
+            // --- OCR REFINEMENT STEP ---
+            try {
+                // Only refine if we have files and coordinates
+                if (files.length > 0 && data.coordinates) {
+                    console.log("[OCR] Starting OCR Refinement with 5s Timeout...");
+
+                    const refineProcess = async () => {
+                        // We only process the first file for now as per current logic
+                        // Convert File to Buffer for Jimp
+                        const fileBuffer = Buffer.from(await files[0].arrayBuffer());
+                        console.log("[OCR] Buffer created");
+
+                        const image = await Jimp.read(fileBuffer);
+                        console.log("[OCR] Jimp read complete");
+
+                        const imgW = image.bitmap.width;
+                        const imgH = image.bitmap.height;
+
+                        console.log("[OCR] Creating Tesseract Worker");
+                        const worker = await createWorker("eng+jpn"); // Create Tesseract worker
+                        console.log("[OCR] Tesseract Worker ready");
+
+                        // Helper to refine a single box
+                        // box: [ymin, xmin, ymax, xmax] (0-1000)
+                        const refineBox = async (box: number[], expectedText: string): Promise<number[] | null> => {
+                            if (!box) return null;
+
+                            // 1. Calculate Crop Region (with padding)
+                            const PADDING = 20; // 20px padding (relative to 1000px)
+                            const ymin = Math.max(0, box[0] - PADDING);
+                            const xmin = Math.max(0, box[1] - PADDING);
+                            const ymax = Math.min(1000, box[2] + PADDING);
+                            const xmax = Math.min(1000, box[3] + PADDING);
+
+                            const w = xmax - xmin;
+                            const h = ymax - ymin;
+
+                            if (w <= 0 || h <= 0) return box;
+
+                            // 2. Crop
+                            // Jimp v1 uses object param for crop
+                            const crop = image.clone().crop({ x: xmin, y: ymin, w: w, h: h });
+
+                            // getBufferAsync is removed in v1, use getBuffer
+                            const cropBuffer = await new Promise<Buffer>((resolve, reject) => {
+                                crop.getBuffer("image/png", (err: Error | null, buffer: Buffer) => {
+                                    if (err) reject(err);
+                                    else resolve(buffer);
+                                });
+                            });
+
+                            // 3. OCR
+                            const ret = await worker.recognize(cropBuffer);
+
+                            // 4. Find best matching word/line bbox
+                            const words = (ret.data as any).words;
+                            let bestWord: any = null;
+
+                            if (words.length > 0) {
+                                // find a word that looks like a value (digit containing)
+                                const valueWord = words.find((w: any) => /\d/.test(w.text));
+                                if (valueWord) {
+                                    bestWord = valueWord;
+                                } else {
+                                    bestWord = words[0]; // Fallback
+                                }
+                            }
+
+                            if (bestWord) {
+                                const b = bestWord.bbox;
+                                // Tesseract bbox: x0, y0, x1, y1 (pixels relative to crop)
+
+                                const globalX0 = xmin + b.x0;
+                                const globalY0 = ymin + b.y0;
+                                const globalX1 = xmin + b.x1;
+                                const globalY1 = ymin + b.y1;
+
+                                console.log(`[OCR] Refined Box found`);
+                                return [globalY0, globalX0, globalY1, globalX1];
+                            }
+
+                            return box; // No refinement found
+                        };
+
+                        // Fields to refine
+                        const planInfo = data.planInfo || {};
+
+                        if (data.coordinates.landArea && planInfo.area_m2) {
+                            const refined = await refineBox(data.coordinates.landArea.box, String(planInfo.area_m2));
+                            if (refined) data.coordinates.landArea.box = refined;
+                        }
+                        if (data.coordinates.floorArea && planInfo.floorArea) {
+                            const refined = await refineBox(data.coordinates.floorArea.box, String(planInfo.floorArea));
+                            if (refined) data.coordinates.floorArea.box = refined;
+                        }
+                        if (data.coordinates.roadPrice && planInfo.roadPrice) {
+                            const refined = await refineBox(data.coordinates.roadPrice.box, String(planInfo.roadPrice));
+                            if (refined) data.coordinates.roadPrice.box = refined;
+                        }
+
+                        await worker.terminate();
+                        console.log("[OCR] Process finished successfully");
+                        return true;
+                    };
+
+                    // TIMEOUT RACE
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error("OCR Timeout (>5s)")), 5000);
+                    });
+
+                    await Promise.race([refineProcess(), timeoutPromise]);
+                }
+            } catch (ocrError) {
+                console.error("[OCR] Skipped/Failed:", ocrError);
+                // Continue without refinement (return original data)
+            }
+
 
             return NextResponse.json(data);
 
@@ -200,7 +323,7 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
         console.error("API Route Error:", error);
         return NextResponse.json(
-            { error: `System Error: ${error.message}` },
+            { error: `System Error: ${error.message} ` },
             { status: 500 }
         );
     }
