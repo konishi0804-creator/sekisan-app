@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // @ts-ignore - serverExternalPackages is available in newer Next.js versions but types might lag
-  serverExternalPackages: ["pdfjs-dist"],
+  // @ts-ignore
+  experimental: {
+    serverComponentsExternalPackages: ["pdfjs-dist"],
+  },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     // Fix for pdfjs-dist 4.x+ standard font packaging
