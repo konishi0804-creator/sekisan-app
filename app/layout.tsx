@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { FileProvider } from "@/context/FileContext";
-import { GoogleAdsense } from "@/components/GoogleAdsense";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -58,7 +58,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
-        <GoogleAdsense pId="ca-pub-7926468542755717" />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7926468542755717"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <FileProvider>
           <div className="flex-grow">
             {children}
