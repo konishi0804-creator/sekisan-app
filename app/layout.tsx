@@ -19,26 +19,26 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "EstiRE | 不動産積算価格シミュレーション",
+    default: "EstiRE | 不動産リフォーム積算AI & 実務計算プラットフォーム",
     template: "%s | EstiRE",
   },
-  description: "AIで不動産（土地・建物）の積算価格を瞬時にシミュレーション。再調達原価法、路線価法、倍率法に対応。全国地価マップ連携機能付き。",
-  keywords: ["不動産", "積算価格", "査定", "シミュレーション", "AI", "路線価", "原価法", "無料ツール"],
+  description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
+  keywords: ["不動産", "積算価格", "査定", "シミュレーション", "AI", "路線価", "原価法", "無料ツール", "リフォーム", "不動産投資"],
   authors: [{ name: "EstiRE Team" }],
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://esti-re.vercel.app"),
   openGraph: {
     type: "website",
     locale: "ja_JP",
     url: "/",
-    title: "EstiRE | 不動産積算価格シミュレーション",
-    description: "AIで不動産の積算価格を自動計算。プロフェッショナルな査定レポートを瞬時に作成。",
+    title: "EstiRE | 不動産リフォーム積算AI & 実務計算プラットフォーム",
+    description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
     siteName: "EstiRE",
     images: ["/logo.png"],
   },
   twitter: {
     card: "summary",
-    title: "EstiRE | 不動産積算価格シミュレーション",
-    description: "AIで不動産の積算価格を自動計算。プロフェッショナルな査定レポートを瞬時に作成。",
+    title: "EstiRE | 不動産リフォーム積算AI & 実務計算プラットフォーム",
+    description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
     images: ["/logo.png"],
   },
   icons: {
