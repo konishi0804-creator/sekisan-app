@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useFileContext } from "../context/FileContext";
 import FileUploader from "../components/FileUploader";
+import AdUnit from "../components/AdUnit";
 import { NEWS_ITEMS } from "../data/news";
 
 // Tool Definition for future expansion
@@ -143,6 +144,9 @@ export default function Home() {
             </div>
           </div>
 
+          {/* AdSense Unit */}
+          <AdUnit slot="0000000000" client="ca-pub-XXXXXXXXXXXXXXXX" />
+
           {/* News Section (Bottom) */}
           <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-left">
             <div className="flex items-center gap-2 mb-3 text-slate-700 font-bold text-sm">
@@ -168,6 +172,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </main>
+    </main >
   );
 }

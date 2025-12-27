@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import FileUploader from "../../components/FileUploader";
 import DocumentPreview from "../../components/DocumentPreview";
+import AdUnit from "../../components/AdUnit";
 import { useFileContext } from "../../context/FileContext";
 import { processFileToImage } from "../../utils/imageProcessor";
 
@@ -1072,6 +1073,11 @@ export default function CalcPage() {
                                     </span>
                                 </p>
                             )}
+                        </div>
+
+                        {/* AdSense Unit */}
+                        <div className="print:hidden">
+                            <AdUnit slot="0000000000" client="ca-pub-XXXXXXXXXXXXXXXX" />
                         </div>
                     </div>
 

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { FileProvider } from "@/context/FileContext";
+import { GoogleAdsense } from "@/components/GoogleAdsense";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +56,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
+        <GoogleAdsense pId="ca-pub-XXXXXXXXXXXXXXXX" />
         <FileProvider>
           <div className="flex-grow">
             {children}
