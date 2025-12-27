@@ -4,6 +4,7 @@ import "./globals.css";
 import Footer from "@/components/Footer";
 import { FileProvider } from "@/context/FileContext";
 import { GoogleAdsense } from "@/components/GoogleAdsense";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
         <div className="print:hidden">
           <Footer />
         </div>
+        <Analytics />
       </body>
     </html>
   );
