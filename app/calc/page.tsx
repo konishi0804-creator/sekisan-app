@@ -777,7 +777,7 @@ export default function CalcPage() {
                                             onChange={(e) => setSelectedAddress(e.target.value)}
                                             onFocus={() => setActiveField("address")}
                                             placeholder="例：東京都千代田区千代田1-1"
-                                            className="w-full p-3 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                            className="w-full p-3 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-900"
                                         />
                                         <button
                                             onClick={() => handleOpenMap("copy")}
@@ -798,7 +798,7 @@ export default function CalcPage() {
                                             value={targetPropertyName}
                                             onChange={(e) => setTargetPropertyName(e.target.value)}
                                             placeholder="例：鈴木様邸、〇〇マンション"
-                                            className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50"
+                                            className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 text-slate-900"
                                         />
                                     </div>
 
@@ -892,7 +892,7 @@ export default function CalcPage() {
                                                     onFocus={() => setActiveField("roadPrice")}
                                                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("roadPrice")
                                                         ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                        : "bg-slate-50 border-slate-300"
+                                                        : "bg-slate-50 border-slate-300 text-slate-900"
                                                         }`}
                                                     placeholder={roadPriceUnit === "yen" ? "100000" : "100"}
                                                 />
@@ -917,7 +917,7 @@ export default function CalcPage() {
                                                 onFocus={() => setActiveField("landArea")}
                                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("landArea")
                                                     ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                    : "bg-slate-50 border-slate-300"
+                                                    : "bg-slate-50 border-slate-300 text-slate-900"
                                                     }`}
                                                 placeholder="100.00"
                                             />
@@ -943,7 +943,7 @@ export default function CalcPage() {
                                                 }}
                                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("fixedTaxValue")
                                                     ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                    : "bg-slate-50 border-slate-300"
+                                                    : "bg-slate-50 border-slate-300 text-slate-900"
                                                     }`}
                                                 placeholder="10000000"
                                             />
@@ -964,7 +964,7 @@ export default function CalcPage() {
                                                 }}
                                                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner ${invalidFields.includes("multiplier")
                                                     ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                    : "bg-slate-50 border-slate-300"
+                                                    : "bg-slate-50 border-slate-300 text-slate-900"
                                                     }`}
                                                 placeholder="1.1"
                                             />
@@ -1001,7 +1001,7 @@ export default function CalcPage() {
                                             value={structure}
                                             onChange={(e) => setStructure(e.target.value as StructureType)}
                                             onFocus={() => setActiveField("structure")}
-                                            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none text-sm"
+                                            className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none text-sm text-slate-900"
                                         >
                                             {Object.keys(STRUCTURES).map((s) => (
                                                 <option key={s} value={s}>
@@ -1042,7 +1042,7 @@ export default function CalcPage() {
                                             onFocus={() => setActiveField("age")}
                                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("age")
                                                 ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                : "bg-slate-50 border-slate-300"
+                                                : "bg-slate-50 border-slate-300 text-slate-900"
                                                 }`}
                                             placeholder="10"
                                         />
@@ -1076,7 +1076,7 @@ export default function CalcPage() {
                                             onFocus={() => setActiveField("floorArea")}
                                             className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none no-spinner text-sm ${invalidFields.includes("floorArea")
                                                 ? "bg-red-50 border-red-500 text-red-900 placeholder-red-300"
-                                                : "bg-slate-50 border-slate-300"
+                                                : "bg-slate-50 border-slate-300 text-slate-900"
                                                 }`}
                                             placeholder="80.00"
                                         />
