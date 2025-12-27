@@ -58,7 +58,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
-        <GoogleAdsense pId="ca-pub-XXXXXXXXXXXXXXXX" />
+        <GoogleAdsense pId="ca-pub-7926468542755717" />
         <FileProvider>
           <div className="flex-grow">
             {children}
