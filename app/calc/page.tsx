@@ -9,6 +9,7 @@ import DocumentPreview from "../../components/DocumentPreview";
 import AdUnit from "../../components/AdUnit";
 import { useFileContext } from "../../context/FileContext";
 import { processFileToImage } from "../../utils/imageProcessor";
+import { IS_TEST_MODE } from "../../utils/constants";
 
 
 type StructureType = "木造" | "軽量鉄骨造" | "重量鉄骨造" | "RC造・SRC造";
@@ -354,7 +355,21 @@ export default function CalcPage() {
             const formData = new FormData();
 
             // Client-side Validation
+            // Client-side Validation
             if (files.length === 0) return;
+
+            // Usage Limit Check (3 times per day)
+            if (!IS_TEST_MODE) {
+                const USAGE_KEY = 'esti_usage_log';
+                const today = new Date().toDateString();
+                const logStr = localStorage.getItem(USAGE_KEY);
+                const log = logStr ? JSON.parse(logStr) : [];
+                const todaysCount = log.filter((d: string) => d === today).length;
+
+                if (todaysCount >= 3) {
+                    throw new Error("【無料枠制限】1日3回までの解析制限に達しました。\n明日またご利用ください。");
+                }
+            }
 
             const isPDF = files[0].type === "application/pdf";
             const isImage = files[0].type.startsWith("image/");
@@ -440,7 +455,19 @@ export default function CalcPage() {
                 throw new Error(errData.error || "Analysis failed");
             }
 
+
             const data = await res.json();
+
+            // Increment Usage Count on Success
+            if (!IS_TEST_MODE) {
+                const USAGE_KEY = 'esti_usage_log';
+                const today = new Date().toDateString();
+                const logStr = localStorage.getItem(USAGE_KEY);
+                let log = logStr ? JSON.parse(logStr) : [];
+                log.push(today);
+                localStorage.setItem(USAGE_KEY, JSON.stringify(log));
+            }
+
             const info = data.planInfo || {};
 
             // Map new schema to state

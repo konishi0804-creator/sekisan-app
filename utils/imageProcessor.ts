@@ -64,6 +64,7 @@ async function convertPdfToImage(file: File): Promise<File> {
 
     if (!tempCtx) throw new Error("Canvas context not available");
 
+    // @ts-ignore
     await page.render({
         canvasContext: tempCtx,
         viewport: viewport,
