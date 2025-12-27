@@ -10,80 +10,8 @@ type ModalContent = {
 };
 
 const MODAL_CONTENTS: Record<string, ModalContent> = {
-    privacy: {
-        title: "プライバシーポリシー",
-        content: (
-            <div className="space-y-6 text-sm leading-relaxed">
-                <div>
-                    <p className="font-bold text-right mb-2">制定日: 2025年12月24日</p>
-                    <p>
-                        「EstiRE」（以下、「当サービス」といいます）は、ユーザーの個人情報およびプライバシーを尊重し、その保護に努めます。本プライバシーポリシーでは、当サービスにおける情報の収集、利用、および管理について定めます。
-                    </p>
-                </div>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">1. 収集する情報</h3>
-                    <p className="mb-2">当サービスは、以下の情報を収集・取得する場合があります。</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li><strong>アップロードされた資料データ</strong>: ユーザーがシミュレーションのためにアップロードした物件概要書（PDF、画像等）に含まれる情報。</li>
-                        <li><strong>アクセスログ・Cookie</strong>: サービスの利用状況（IPアドレス、ブラウザの種類、アクセス日時等）を解析するための情報。</li>
-                        <li><strong>お問い合わせ情報</strong>: ユーザーからのお問い合わせ時に提供されるメールアドレス等の連絡先情報。</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">2. 利用目的</h3>
-                    <p className="mb-2">取得した情報は、以下の目的で利用します。</p>
-                    <ol className="list-decimal pl-5 space-y-1">
-                        <li>本サービスの機能（不動産積算価格の試算等）を提供するため。</li>
-                        <li>サービスの利用状況を分析し、機能改善や新機能開発に役立てるため。</li>
-                        <li>不正アクセスやスパム行為などの不正利用を防止するため。</li>
-                        <li>お問い合わせへの対応のため。</li>
-                    </ol>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">3. アップロードデータの取り扱い</h3>
-                    <p>
-                        ユーザーがアップロードした物件資料データは、シミュレーション結果を生成するためにサーバーまたはブラウザ上で一時的に処理されます。
-                        運営者は、法令に基づく場合やデバッグ（不具合調査）等の正当な理由がない限り、ユーザーの同意なくアップロードされたファイルの中身を第三者に閲覧・提供することはありません。
-                    </p>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">4. Googleアナリティクスの利用について</h3>
-                    <p>
-                        当サービスでは、サービス向上のためにGoogle社の提供するアクセス解析ツール「Googleアナリティクス」を利用しています。
-                        Googleアナリティクスは、Cookieを使用してトラフィックデータを収集しますが、これは匿名で収集されており、個人を特定するものではありません。
-                        この機能はブラウザの設定でCookieを無効にすることで収集を拒否することができます。詳しくは<a href="https://marketingplatform.google.com/about/analytics/terms/jp/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Googleアナリティクス利用規約</a>をご確認ください。
-                    </p>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">5. 免責事項</h3>
-                    <p>
-                        当サービスからリンクやバナーなどによって他のサイトに移動された場合、移動先サイトで提供される情報、サービス等について一切の責任を負いません。
-                    </p>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">6. 本ポリシーの変更</h3>
-                    <p>
-                        当サービスは、必要と判断した場合には、ユーザーへの事前の通知なく本ポリシーを変更することができるものとします。変更後のプライバシーポリシーは、本ウェブサイトに掲載した時点から効力を生じるものとします。
-                    </p>
-                </section>
-
-                <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">7. お問い合わせ</h3>
-                    <p>
-                        本ポリシーに関するお問い合わせは、当サイトの<button onClick={() => document.querySelector<HTMLElement>('[data-modal-trigger="contact"]')?.click()} className="cursor-pointer text-blue-600 hover:underline">お問い合わせフォーム</button>よりご連絡ください。
-                    </p>
-                </section>
-            </div>
-        ),
-    },
-    terms: {
-        title: "サービス利用規約",
+    faq: {
+        title: "よくある質問",
         content: (
             <div className="space-y-6 text-sm leading-relaxed">
                 <div>
@@ -411,13 +339,12 @@ export default function Footer() {
                             >
                                 <span className="text-slate-400">▶</span> 使い方
                             </button>
-                            <button
-                                onClick={() => openModal("privacy")}
-                                data-modal-trigger="privacy"
+                            <Link
+                                href="/privacy"
                                 className="cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-1"
                             >
                                 <span className="text-slate-400">▶</span> プライバシーポリシー
-                            </button>
+                            </Link>
                             <button onClick={() => openModal("terms")} className="cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-1">
                                 <span className="text-slate-400">▶</span> サービス利用規約
                             </button>
