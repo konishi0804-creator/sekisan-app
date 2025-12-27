@@ -10,8 +10,8 @@ type ModalContent = {
 };
 
 const MODAL_CONTENTS: Record<string, ModalContent> = {
-    faq: {
-        title: "よくある質問",
+    terms: {
+        title: "サービス利用規約",
         content: (
             <div className="space-y-6 text-sm leading-relaxed">
                 <div>
