@@ -1,4 +1,3 @@
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 
 // Worker Config moved to inside function to strictly avoid SSR execution
 
@@ -39,6 +38,8 @@ function createSquareCanvas(source: CanvasImageSource, width: number, height: nu
 }
 
 async function convertPdfToImage(file: File): Promise<File> {
+    const { GlobalWorkerOptions, getDocument } = await import("pdfjs-dist");
+
     // Initialize worker only on client side when needed
     if (!GlobalWorkerOptions.workerSrc) {
         GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
