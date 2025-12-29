@@ -68,7 +68,9 @@ export async function POST(req: NextRequest) {
                 "workType": "string|null (New, Renovation, etc.)",
                 "roadPrice": "number|null (Road Price/Rosenka if available)",
                 "age": "number|null (Building age in years)",
-                "usefulLife": "number|null (Useful life in years)"
+                "usefulLife": "number|null (Useful life in years)",
+                "landTaxValue": "number|null (Current Year Value / 当該年度価格 - NOT Taxable Basis / 課税標準額)",
+                "buildingTaxValue": "number|null (Current Year Value / 当該年度価格 - NOT Taxable Basis / 課税標準額)"
               },
               "estimate": {
                 "currency": "JPY",
@@ -107,7 +109,9 @@ export async function POST(req: NextRequest) {
                  "structure": { "box": [number, number, number, number], "page": number } | null,
                  "address": { "box": [number, number, number, number], "page": number } | null,
                  "roadPrice": { "box": [number, number, number, number], "page": number } | null,
-                 "age": { "box": [number, number, number, number], "page": number } | null
+                 "age": { "box": [number, number, number, number], "page": number } | null,
+                 "landTaxValue": { "box": [number, number, number, number], "page": number } | null,
+                 "buildingTaxValue": { "box": [number, number, number, number], "page": number } | null
               },
               "missingFields": [
                 { "field": "string", "reason": "string (Why is it missing?)", "suggestedWhereToFind": "string|null" }
@@ -126,6 +130,12 @@ export async function POST(req: NextRequest) {
                 - Reiwa (令和) X year = 2018 + X
               - Example: "平成10年新築" -> 1998 -> Age = ${new Date().getFullYear()} - 1998 = ${new Date().getFullYear() - 1998}.
               - Example: "昭和60年" -> 1985 -> Age = ${new Date().getFullYear()} - 1985 = ${new Date().getFullYear() - 1985}.
+
+            Specific Instructions for Tax Values:
+            - For "landTaxValue" and "buildingTaxValue", you MUST extract the "Current Year Value" (当該年度価格 or 評価額).
+            - DO NOT extract "Taxable Basis Amount" (課税標準額). This is usually a smaller number next to the value.
+            - Look for the column header "当該年度価格" or "価格".
+            - If there are multiple lands or buildings, sum their "Current Year Value" respectively.
 
             Coordinates Instructions:
             - CRITICAL: "box" must [ymin, xmin, ymax, xmax] normalized to 1000 scale (0-1000).

@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 
 import Link from "next/link";
@@ -246,6 +246,8 @@ export default function CalcPage() {
 
     // Result State
     const [results, setResults] = useState<CalcResult | null>(null);
+    const resultRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     const [lang, setLang] = useState<Lang>("ja");
     const [isFlashing, setIsFlashing] = useState(false);
@@ -323,12 +325,12 @@ export default function CalcPage() {
         if (suffix) {
             document.title = `${base}${suffix}`;
         } else {
-            document.title = "EstiRE";
+            document.title = "積算価格計算シミュレーション | EstiRE";
         }
 
         // Cleanup on unmount
         return () => {
-            document.title = "EstiRE";
+            document.title = "积算价格计算シミュレーション | EstiRE";
         };
     }, [targetPropertyName, selectedAddress]);
 
@@ -674,10 +676,6 @@ export default function CalcPage() {
     };
 
     const handleDownloadPDF = async () => {
-        if (!window.confirm("PDF保存は有料サービスです。\n現在はサンプルとして無償でご利用いただけます。\n\n※印刷画面が開きますので、「送信先」または「プリンター」で「PDFに保存」を選択してください。")) {
-            return;
-        }
-
         window.print();
     };
 
@@ -1125,11 +1123,17 @@ export default function CalcPage() {
 
                 {/* Result Summary Card (Small Preview) */}
                 {results && (
-                    <div className="space-y-4">
+                    <div ref={scrollRef} className="space-y-4">
+                        {/* AdSense Unit */}
+                        <div className="mb-8 print:hidden">
+                            <AdUnit slot="1234567890" client="ca-pub-7926468542755717" />
+                        </div>
+
                         {/* Controls Toolbar */}
-                        <div className="flex justify-end items-center gap-2 print:hidden">
+                        <div className="flex justify-end items-center gap-2 print:hidden relative z-50">
                             {/* Print Button */}
                             <button
+                                type="button"
                                 onClick={handleDownloadPDF}
                                 className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
                                 title="PDFダウンロード"

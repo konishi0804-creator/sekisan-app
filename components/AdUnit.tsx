@@ -28,7 +28,9 @@ export default function AdUnit({
         try {
             // @ts-ignore
             ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-        } catch (err) {
+        } catch (err: any) {
+            // Suppress the "already have ads" error which is common in SPA transitions
+            if (err?.message?.includes("already have ads")) return;
             console.error("AdSense error", err);
         }
     }, []);
