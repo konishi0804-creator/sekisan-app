@@ -539,17 +539,17 @@ export default function ApportionmentPage() {
                                             </div>
                                         </div>
                                         <div className="text-right flex gap-6 items-baseline">
-                                            <span className="text-sm font-bold text-slate-500">土地 <span className="font-mono text-2xl text-slate-700 ml-1">{formatPercent(100 - result.ratio)}</span></span>
-                                            <span className="text-sm font-bold text-slate-500">建物 <span className="font-mono text-2xl text-blue-600 ml-1">{formatPercent(result.ratio)}</span></span>
+                                            <span className="text-sm font-bold text-slate-500">土地 <span className="font-mono text-2xl text-emerald-600 ml-1">{formatPercent(100 - result.ratio)}</span></span>
+                                            <span className="text-sm font-bold text-slate-500">建物 <span className="font-mono text-2xl text-blue-700 ml-1">{formatPercent(result.ratio)}</span></span>
                                         </div>
                                     </div>
-                                    <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex shadow-inner">
+                                    <div className="w-full bg-slate-200 rounded-full h-8 overflow-hidden flex shadow-inner">
                                         <div
-                                            className="bg-slate-500 h-full"
+                                            className="bg-emerald-500 h-full"
                                             style={{ width: `${100 - result.ratio}%` }}
                                         ></div>
                                         <div
-                                            className="bg-blue-500 h-full"
+                                            className="bg-blue-600 h-full"
                                             style={{ width: `${result.ratio}%` }}
                                         ></div>
                                     </div>
@@ -562,7 +562,7 @@ export default function ApportionmentPage() {
                                     {/* Land Section */}
                                     <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100">
                                         <div className="flex items-center gap-3 mb-4">
-                                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg shadow-md shadow-blue-100 flex-shrink-0">
+                                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-3 rounded-lg shadow-md shadow-emerald-100 flex-shrink-0">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
                                                 </svg>

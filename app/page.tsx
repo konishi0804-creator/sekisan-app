@@ -11,7 +11,7 @@ const CALCULATION_TOOLS = [
   {
     id: "estimate",
     title: "積算価格計算シミュレーション",
-    description: "土地と建物の評価額を算出",
+    description: "土地：路線価、建物：再調達価格などから積算価格をシミュレート",
     path: "/calc",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -21,11 +21,12 @@ const CALCULATION_TOOLS = [
     bgColor: "bg-slate-700",
     hoverColor: "hover:bg-slate-800",
     disabled: false,
+    note: "※アップロード資料：物件概要書等",
   },
   {
     id: "apportionment",
     title: "土地建物評価額按分シミュレーション",
-    description: "固定資産税評価額の比率に基づいて、土地と建物の価格内訳を算出",
+    description: "売買代金の土地、建物、消費税の内訳を評価額比率で按分します。",
     path: "/tools/apportionment",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -35,6 +36,7 @@ const CALCULATION_TOOLS = [
     bgColor: "bg-rose-800",
     hoverColor: "hover:bg-rose-900",
     disabled: false,
+    note: "※アップロード資料：課税明細や評価証明等",
   },
   // Future tools can be added here
 ];
@@ -147,6 +149,10 @@ export default function Home() {
                   <div className="flex-1">
                     <h3 className="font-bold text-lg">{tool.title}</h3>
                     <p className="text-white/80 text-sm">{tool.description}</p>
+                    {/* @ts-ignore - note property exists dynamically */}
+                    {tool.note && (
+                      <p className="text-pink-200 text-xs mt-1 font-bold">{tool.note}</p>
+                    )}
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
