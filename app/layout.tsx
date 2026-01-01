@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "EstiRE | 不動産投資の計算シミュレーション",
+    default: "EstiRE | 不動産投資に必要な計算プラットフォーム",
     template: "%s | EstiRE",
   },
   description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
@@ -30,14 +30,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ja_JP",
     url: "/",
-    title: "EstiRE | 不動産投資の計算シミュレーション",
+    title: "EstiRE | 不動産投資に必要な計算プラットフォーム",
     description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
     siteName: "EstiRE",
     images: ["/logo.png"],
   },
   twitter: {
     card: "summary",
-    title: "EstiRE | 不動産投資の計算シミュレーション",
+    title: "EstiRE | 不動産投資に必要な計算プラットフォーム",
     description: "AIによる積算価格シミュレーション「EstiRE」。概要書をアップロードするだけで概算を作成。今後は土地建物按分・固定資産税・諸費用計算など、不動産投資に必要な全機能を網羅する総合ツールへ順次拡大予定。",
     images: ["/logo.png"],
   },
