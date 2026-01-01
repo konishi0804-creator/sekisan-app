@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
 
-export const alt = 'EstiRE | 不動産リフォーム積算AI'
+export const alt = 'EstiRE | 不動産投資に必要な計算プラットフォーム'
 export const size = {
     width: 1200,
     height: 630,
@@ -44,7 +44,7 @@ export default async function Image() {
                         letterSpacing: '0.1em',
                     }}
                 >
-                    不動産総合AIツール
+                    不動産投資×計算プラットフォーム
                 </div>
             </div>
         ),
