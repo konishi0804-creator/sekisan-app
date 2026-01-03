@@ -70,7 +70,12 @@ export async function POST(req: NextRequest) {
                 "age": "number|null (Building age in years)",
                 "usefulLife": "number|null (Useful life in years)",
                 "landTaxValue": "number|null (Current Year Value / 当該年度価格 - NOT Taxable Basis / 課税標準額)",
-                "buildingTaxValue": "number|null (Current Year Value / 当該年度価格 - NOT Taxable Basis / 課税標準額)"
+                "buildingTaxValue": "number|null (Current Year Value / 当該年度価格 - NOT Taxable Basis / 課税標準額)",
+                "landFixedAssetTax": "number|null (Land Fixed Asset Tax / 土地の固定資産税)",
+                "landCityPlanningTax": "number|null (Land City Planning Tax / 土地の都市計画税)",
+                "buildingFixedAssetTax": "number|null (Building Fixed Asset Tax / 建物の固定資産税)",
+                "buildingCityPlanningTax": "number|null (Building City Planning Tax / 建物の都市計画税)",
+                "annualFixedAssetTax": "number|null (Total Annual Fixed Asset Tax Amount / 年税額 - Sum of Land+Building+CityPlanning if applicable)"
               },
               "estimate": {
                 "currency": "JPY",
@@ -111,7 +116,12 @@ export async function POST(req: NextRequest) {
                  "roadPrice": { "box": [number, number, number, number], "page": number } | null,
                  "age": { "box": [number, number, number, number], "page": number } | null,
                  "landTaxValue": { "box": [number, number, number, number], "page": number } | null,
-                 "buildingTaxValue": { "box": [number, number, number, number], "page": number } | null
+                 "buildingTaxValue": { "box": [number, number, number, number], "page": number } | null,
+                 "landFixedAssetTax": { "box": [number, number, number, number], "page": number } | null,
+                 "landCityPlanningTax": { "box": [number, number, number, number], "page": number } | null,
+                 "buildingFixedAssetTax": { "box": [number, number, number, number], "page": number } | null,
+                 "buildingCityPlanningTax": { "box": [number, number, number, number], "page": number } | null,
+                 "annualFixedAssetTax": { "box": [number, number, number, number], "page": number } | null
               },
               "missingFields": [
                 { "field": "string", "reason": "string (Why is it missing?)", "suggestedWhereToFind": "string|null" }
@@ -132,10 +142,19 @@ export async function POST(req: NextRequest) {
               - Example: "昭和60年" -> 1985 -> Age = ${new Date().getFullYear()} - 1985 = ${new Date().getFullYear() - 1985}.
 
             Specific Instructions for Tax Values:
-            - For "landTaxValue" and "buildingTaxValue", you MUST extract the "Current Year Value" (当該年度価格 or 評価額).
-            - DO NOT extract "Taxable Basis Amount" (課税標準額). This is usually a smaller number next to the value.
-            - Look for the column header "当該年度価格" or "価格".
-            - If there are multiple lands or buildings, sum their "Current Year Value" respectively.
+            - **CRITICAL**: Extract 'Fixed Asset Tax' (固定資産税) and 'City Planning Tax' (都市計画税) separately.
+              - **Land**:
+                 - Look for "Land" (土地) row.
+                 - landFixedAssetTax: Extract "Fixed Asset Tax" (固定資産税相当額/税額).
+                 - landCityPlanningTax: Extract "City Planning Tax" (都市計画税相当額/税額).
+              - **Building**:
+                 - Look for "House/Building" (家屋/建物) row.
+                 - buildingFixedAssetTax: Extract "Fixed Asset Tax" (固定資産税相当額/税額).
+                 - buildingCityPlanningTax: Extract "City Planning Tax" (都市計画税相当額/税額).
+              - Do NOT extract "Taxable Basis" (課税標準額) or "Price" (価格/評価額).
+              - If there are multiple items, SUM them respectively.
+            - For 'landTaxValue' and 'buildingTaxValue', extract "Current Year Value" (当該年度価格 or 評価額).
+            - 'annualFixedAssetTax' should be the Grand Total of Tax (年税額). It should roughly equal landAnnualTax + buildingAnnualTax.
 
             Coordinates Instructions:
             - CRITICAL: "box" must [ymin, xmin, ymax, xmax] normalized to 1000 scale (0-1000).
