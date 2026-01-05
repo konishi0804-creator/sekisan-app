@@ -251,14 +251,13 @@ export default function TaxProrationPage() {
             </header>
 
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: Document Preview */}
-                    <div className="space-y-6 lg:sticky lg:top-24 lg:self-start lg:h-fit">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    {/* Left Column: Document Preview (Sticky) */}
+                    <div className="lg:sticky lg:top-24 h-fit space-y-6">
                         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-fit">
                             <div className="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
                                 <h2 className="font-bold text-slate-700 flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-emerald-600">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                     </svg>
                                     資料プレビュー
                                 </h2>
@@ -303,12 +302,6 @@ export default function TaxProrationPage() {
                                 </svg>
                                 計算条件
                             </h2>
-
-                            {error && (
-                                <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-                                    {error}
-                                </div>
-                            )}
 
                             <div className="space-y-8">
                                 {/* Property Name */}
@@ -487,178 +480,194 @@ export default function TaxProrationPage() {
                                 >
                                     計算する
                                 </button>
+                                {error && (
+                                    <p className="mt-4 text-red-600 font-bold text-center bg-red-50 p-3 rounded-lg border border-red-200 animate-in fade-in slide-in-from-top-2 text-sm">
+                                        <span className="flex items-center justify-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008h-.008v-.008z" />
+                                            </svg>
+                                            {error}
+                                        </span>
+                                    </p>
+                                )}
 
 
 
 
-                                <div className="mt-8">
-                                    <AdUnit slot="0000000000" client="ca-pub-XXXXXXXXXXXXXXXX" />
-                                </div>
+                                {/* AdSense Removed from here */}
                             </div>
                         </div>
                     </div>
+
 
                 </div>
             </div>
 
-            {/* Detailed Results (Centered) */}
-            {result && (
-                <div ref={scrollRef} className="mt-16 mx-auto max-w-[800px] print:mt-0 print:w-full">
-                    <div className="relative bg-white text-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-xl print:shadow-none">
 
-                        {/* Watermark */}
-                        <div className="hidden print:flex absolute inset-0 z-0 items-center justify-center pointer-events-none opacity-[0.08] select-none overflow-hidden">
-                            <div className="transform -rotate-45 text-slate-900 font-black text-[100px] whitespace-nowrap leading-none tracking-widest border-4 border-slate-900 p-12 rounded-3xl">
-                                SAMPLE
-                            </div>
+            {/* Detailed Results (Centered) */}
+            {
+                result && (
+                    <div ref={scrollRef} className="mt-16 mx-auto max-w-[800px] print:mt-0 print:w-full space-y-8">
+                        {/* AdSense Unit (Centered Above Result) */}
+                        <div className="flex justify-center print:hidden">
+                            <AdUnit slot="0000000000" client="ca-pub-XXXXXXXXXXXXXXXX" />
                         </div>
 
-                        {/* Decorative Top Border */}
-                        <div className="h-2 bg-gradient-to-r from-emerald-600 to-teal-700"></div>
+                        <div className="relative bg-white text-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-xl print:shadow-none">
 
-                        <div className="p-8 md:p-12 flex flex-col h-full bg-gradient-to-br from-white to-slate-50 print:p-0 print:bg-none">
-
-                            {/* Header */}
-                            <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
-                                <div>
-                                    <p className="text-xs text-slate-500 font-serif tracking-widest mb-1">不動産取引 精算書</p>
-                                    <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-wide">
-                                        固定資産税等 精算計算書
-                                    </h2>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-slate-400">作成日</p>
-                                    <p className="text-sm font-medium">{new Date().toLocaleDateString('ja-JP')}</p>
+                            {/* Watermark */}
+                            <div className="hidden print:flex absolute inset-0 z-0 items-center justify-center pointer-events-none opacity-[0.08] select-none overflow-hidden">
+                                <div className="transform -rotate-45 text-slate-900 font-black text-[100px] whitespace-nowrap leading-none tracking-widest border-4 border-slate-900 p-12 rounded-3xl">
+                                    SAMPLE
                                 </div>
                             </div>
 
-                            {/* Property Info */}
-                            <div className="mb-8">
-                                <p className="text-xs text-slate-400 mb-1">対象不動産</p>
-                                <p className="text-lg font-bold border-b border-slate-200 pb-1">
-                                    {propertyName || "(物件名未入力)"}
-                                </p>
-                            </div>
+                            {/* Decorative Top Border */}
+                            <div className="h-2 bg-gradient-to-r from-emerald-600 to-teal-700"></div>
 
-                            {/* Result Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                                {/* Buyer */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-3 h-8 bg-blue-600 rounded-full"></div>
-                                        <div>
-                                            <h3 className="font-bold text-xl text-slate-800">買主様 ご負担額</h3>
-                                            <p className="text-xs text-slate-500">起算日～決済日前日までは売主様負担</p>
+                            <div className="p-8 md:p-12 flex flex-col h-full bg-gradient-to-br from-white to-slate-50 print:p-0 print:bg-none">
+
+                                {/* Header */}
+                                <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-serif tracking-widest mb-1">不動産取引 精算書</p>
+                                        <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-wide">
+                                            固定資産税等 精算計算書
+                                        </h2>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-slate-400">作成日</p>
+                                        <p className="text-sm font-medium">{new Date().toLocaleDateString('ja-JP')}</p>
+                                    </div>
+                                </div>
+
+                                {/* Property Info */}
+                                <div className="mb-8">
+                                    <p className="text-xs text-slate-400 mb-1">対象不動産</p>
+                                    <p className="text-lg font-bold border-b border-slate-200 pb-1">
+                                        {propertyName || "(物件名未入力)"}
+                                    </p>
+                                </div>
+
+                                {/* Result Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-start">
+                                    {/* Buyer */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-3 h-8 bg-blue-600 rounded-full"></div>
+                                            <div>
+                                                <h3 className="font-bold text-xl text-slate-800">買主様 ご負担額</h3>
+                                                <p className="text-xs text-slate-500">起算日～決済日前日までは売主様負担</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                                            <div className="flex justify-between items-end mb-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-blue-800">負担期間</span>
+                                                    <span className="text-xs text-slate-500">{result.buyerPeriod}</span>
+                                                </div>
+                                                <span className="text-2xl font-bold text-blue-700">{result.buyerDays}<span className="text-sm ml-1 text-slate-500">日分</span></span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex flex-col justify-between border-b border-blue-100 pb-2">
+                                                    <div className="flex justify-between w-full">
+                                                        <span className="text-slate-600">土地分</span>
+                                                        <span className="font-mono font-medium">¥{result.buyerLand.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
+                                                        土地年税額 {totalLandTax.toLocaleString()} × 日数 {result.buyerDays} / 365
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col justify-between border-b border-blue-100 pb-2">
+                                                    <div className="flex justify-between w-full">
+                                                        <span className="text-slate-600">建物分 (税抜)</span>
+                                                        <span className="font-mono font-medium">¥{result.buyerBuilding.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
+                                                        建物年税額 {totalBuildingTax.toLocaleString()} × 日数 {result.buyerDays} / 365
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-center pt-1">
+                                                    <span className="text-sm text-slate-600">消費税 (建物分)</span>
+                                                    <span className="font-mono text-rose-600 font-medium">
+                                                        {result.buyerConsumptionTax > 0 ? `¥${result.buyerConsumptionTax.toLocaleString()}` : "-"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t-2 border-blue-200 flex justify-between items-end">
+                                                <span className="font-bold text-blue-900">ご請求金額</span>
+                                                <span className="font-mono text-3xl font-bold text-blue-700">¥{result.buyerTotal.toLocaleString()}</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
-                                        <div className="flex justify-between items-end mb-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-blue-800">負担期間</span>
-                                                <span className="text-xs text-slate-500">{result.buyerPeriod}</span>
-                                            </div>
-                                            <span className="text-2xl font-bold text-blue-700">{result.buyerDays}<span className="text-sm ml-1 text-slate-500">日分</span></span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex flex-col justify-between border-b border-blue-100 pb-2">
-                                                <div className="flex justify-between w-full">
-                                                    <span className="text-slate-600">土地分</span>
-                                                    <span className="font-mono font-medium">¥{result.buyerLand.toLocaleString()}</span>
-                                                </div>
-                                                <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
-                                                    土地年税額 {totalLandTax.toLocaleString()} × 日数 {result.buyerDays} / 365
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col justify-between border-b border-blue-100 pb-2">
-                                                <div className="flex justify-between w-full">
-                                                    <span className="text-slate-600">建物分 (税抜)</span>
-                                                    <span className="font-mono font-medium">¥{result.buyerBuilding.toLocaleString()}</span>
-                                                </div>
-                                                <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
-                                                    建物年税額 {totalBuildingTax.toLocaleString()} × 日数 {result.buyerDays} / 365
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center pt-1">
-                                                <span className="text-sm text-slate-600">消費税 (建物分)</span>
-                                                <span className="font-mono text-rose-600 font-medium">
-                                                    {result.buyerConsumptionTax > 0 ? `¥${result.buyerConsumptionTax.toLocaleString()}` : "-"}
-                                                </span>
+                                    {/* Seller */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-3 h-8 bg-emerald-600 rounded-full"></div>
+                                            <div>
+                                                <h3 className="font-bold text-xl text-slate-800">売主様 ご負担額</h3>
+                                                <p className="text-xs text-slate-500">起算日～決済日前日</p>
                                             </div>
                                         </div>
-                                        <div className="mt-4 pt-4 border-t-2 border-blue-200 flex justify-between items-end">
-                                            <span className="font-bold text-blue-900">ご請求金額</span>
-                                            <span className="font-mono text-3xl font-bold text-blue-700">¥{result.buyerTotal.toLocaleString()}</span>
+
+                                        <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
+                                            <div className="flex justify-between items-end mb-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-emerald-800">負担期間</span>
+                                                    <span className="text-xs text-slate-500">{result.sellerPeriod}</span>
+                                                </div>
+                                                <span className="text-2xl font-bold text-emerald-700">{result.sellerDays}<span className="text-sm ml-1 text-slate-500">日分</span></span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex flex-col justify-between border-b border-emerald-100 pb-2">
+                                                    <div className="flex justify-between w-full">
+                                                        <span className="text-slate-600">土地分</span>
+                                                        <span className="font-mono font-medium">¥{result.sellerLand.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
+                                                        土地年税額 {totalLandTax.toLocaleString()} × 日数 {result.sellerDays} / 365
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col justify-between border-b border-emerald-100 pb-2">
+                                                    <div className="flex justify-between w-full">
+                                                        <span className="text-slate-600">建物分</span>
+                                                        <span className="font-mono font-medium">¥{result.sellerBuilding.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
+                                                        建物年税額 {totalBuildingTax.toLocaleString()} × 日数 {result.sellerDays} / 365
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-center pt-1 opacity-50">
+                                                    <span className="text-sm text-slate-600">消費税</span>
+                                                    <span className="font-mono text-slate-400">-</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t-2 border-emerald-200 flex justify-between items-end">
+                                                <span className="font-bold text-emerald-900">負担合計</span>
+                                                <span className="font-mono text-3xl font-bold text-emerald-700">¥{result.sellerTotal.toLocaleString()}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Seller */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-3 h-8 bg-emerald-600 rounded-full"></div>
-                                        <div>
-                                            <h3 className="font-bold text-xl text-slate-800">売主様 ご負担額</h3>
-                                            <p className="text-xs text-slate-500">起算日～決済日前日</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
-                                        <div className="flex justify-between items-end mb-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-emerald-800">負担期間</span>
-                                                <span className="text-xs text-slate-500">{result.sellerPeriod}</span>
-                                            </div>
-                                            <span className="text-2xl font-bold text-emerald-700">{result.sellerDays}<span className="text-sm ml-1 text-slate-500">日分</span></span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex flex-col justify-between border-b border-emerald-100 pb-2">
-                                                <div className="flex justify-between w-full">
-                                                    <span className="text-slate-600">土地分</span>
-                                                    <span className="font-mono font-medium">¥{result.sellerLand.toLocaleString()}</span>
-                                                </div>
-                                                <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
-                                                    土地年税額 {totalLandTax.toLocaleString()} × 日数 {result.sellerDays} / 365
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col justify-between border-b border-emerald-100 pb-2">
-                                                <div className="flex justify-between w-full">
-                                                    <span className="text-slate-600">建物分</span>
-                                                    <span className="font-mono font-medium">¥{result.sellerBuilding.toLocaleString()}</span>
-                                                </div>
-                                                <div className="text-[10px] text-slate-400 font-mono mt-1 text-right">
-                                                    建物年税額 {totalBuildingTax.toLocaleString()} × 日数 {result.sellerDays} / 365
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center pt-1 opacity-50">
-                                                <span className="text-sm text-slate-600">消費税</span>
-                                                <span className="font-mono text-slate-400">-</span>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 pt-4 border-t-2 border-emerald-200 flex justify-between items-end">
-                                            <span className="font-bold text-emerald-900">負担合計</span>
-                                            <span className="font-mono text-3xl font-bold text-emerald-700">¥{result.sellerTotal.toLocaleString()}</span>
-                                        </div>
-                                    </div>
+                                {/* Notes */}
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs text-slate-500">
+                                    <p className="font-bold mb-1">計算条件</p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li>起算日：{startDayMode === "jan1" ? "1月1日" : "4月1日"}</li>
+                                        <li>決済日：{new Date(settlementDate).toLocaleDateString('ja-JP')}</li>
+                                        <li>日割計算：365日計算（閏年も365日として計算）</li>
+                                        <li>端数処理：円未満切り捨て</li>
+                                    </ul>
                                 </div>
-                            </div>
 
-                            {/* Notes */}
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs text-slate-500">
-                                <p className="font-bold mb-1">計算条件</p>
-                                <ul className="list-disc pl-4 space-y-1">
-                                    <li>起算日：{startDayMode === "jan1" ? "1月1日" : "4月1日"}</li>
-                                    <li>決済日：{new Date(settlementDate).toLocaleDateString('ja-JP')}</li>
-                                    <li>日割計算：365日計算（閏年も365日として計算）</li>
-                                    <li>端数処理：円未満切り捨て</li>
-                                </ul>
                             </div>
-
                         </div>
                     </div>
-                </div>
-            )}
-
-        </main>
+                )
+            }
+        </main >
     );
 }
