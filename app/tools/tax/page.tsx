@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useFileContext } from "../../../context/FileContext";
 import DocumentPreview from "../../../components/DocumentPreview";
@@ -35,6 +35,15 @@ export default function TaxProrationPage() {
         dailyRateLand: number;
         dailyRateBuilding: number;
     } | null>(null);
+
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to result when calculated
+    useEffect(() => {
+        if (result && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [result]);
 
     // File & Preview State
     const { files: contextFiles } = useFileContext();
@@ -494,7 +503,7 @@ export default function TaxProrationPage() {
 
             {/* Detailed Results (Centered) */}
             {result && (
-                <div className="mt-16 mx-auto max-w-[800px] print:mt-0 print:w-full">
+                <div ref={scrollRef} className="mt-16 mx-auto max-w-[800px] print:mt-0 print:w-full">
                     <div className="relative bg-white text-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-xl print:shadow-none">
 
                         {/* Watermark */}

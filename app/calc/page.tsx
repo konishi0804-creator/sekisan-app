@@ -311,6 +311,13 @@ export default function CalcPage() {
         setUsefulLife(data.usefulLife);
     }, [structure]);
 
+    // Auto-scroll to result when calculated
+    useEffect(() => {
+        if (results && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [results]);
+
     // Dynamic Title for Print Filename
     useEffect(() => {
         const base = "EstiRE_sekisan_";
